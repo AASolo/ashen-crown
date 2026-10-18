@@ -1,0 +1,9 @@
+node_modules
+dist
+dist-single
+build
+.backup
+__pycache__/
+# сырые скачанные исходники (FLARE, Wyrmsun, AncientBeast, 0 A.D.): см. CREDITS.md и tools/
+assets/incoming/
+docs/pending/

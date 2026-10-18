@@ -1,0 +1,21 @@
+{
+  "name": "ashen-crown",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Ashen Crown: Echoes of the Hollow Sun — прототип изометрической ARPG",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "build:single": "tsc --noEmit && vite build --mode single",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "phaser": "3.90.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "6.4.4",
+    "vite-plugin-singlefile": "2.3.3"
+  }
+}

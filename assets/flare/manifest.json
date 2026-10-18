@@ -1,0 +1,864 @@
+{
+ "sheets": {
+  "hero_blade": {
+   "fw": 213,
+   "fh": 165,
+   "footY": 126.75,
+   "cols": 18,
+   "perSide": 28,
+   "anims": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     8
+    ],
+    "attack": [
+     12,
+     4
+    ],
+    "cast": [
+     16,
+     4
+    ],
+    "hit": [
+     20,
+     2
+    ],
+    "death": [
+     22,
+     6
+    ]
+   },
+   "scale": 0.75
+  },
+  "hero_witch": {
+   "fw": 236,
+   "fh": 181,
+   "footY": 138.0,
+   "cols": 16,
+   "perSide": 28,
+   "anims": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     8
+    ],
+    "attack": [
+     12,
+     4
+    ],
+    "cast": [
+     16,
+     4
+    ],
+    "hit": [
+     20,
+     2
+    ],
+    "death": [
+     22,
+     6
+    ]
+   },
+   "scale": 0.75
+  },
+  "hero_bone": {
+   "fw": 200,
+   "fh": 154,
+   "footY": 120.75,
+   "cols": 20,
+   "perSide": 28,
+   "anims": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     8
+    ],
+    "attack": [
+     12,
+     4
+    ],
+    "cast": [
+     16,
+     4
+    ],
+    "hit": [
+     20,
+     2
+    ],
+    "death": [
+     22,
+     6
+    ]
+   },
+   "scale": 0.75
+  },
+  "hero_shade": {
+   "fw": 153,
+   "fh": 130,
+   "footY": 106.5,
+   "cols": 26,
+   "perSide": 28,
+   "anims": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     8
+    ],
+    "attack": [
+     12,
+     4
+    ],
+    "cast": [
+     16,
+     4
+    ],
+    "hit": [
+     20,
+     2
+    ],
+    "death": [
+     22,
+     6
+    ]
+   },
+   "scale": 0.75
+  },
+  "en_ghoul": {
+   "fw": 146,
+   "fh": 136,
+   "footY": 109.5,
+   "cols": 27,
+   "perSide": 28,
+   "anims": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     8
+    ],
+    "attack": [
+     12,
+     4
+    ],
+    "cast": [
+     16,
+     4
+    ],
+    "hit": [
+     20,
+     2
+    ],
+    "death": [
+     22,
+     6
+    ]
+   },
+   "scale": 0.75
+  },
+  "en_cultist": {
+   "fw": 218,
+   "fh": 146,
+   "footY": 111.0,
+   "cols": 18,
+   "perSide": 28,
+   "anims": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     8
+    ],
+    "attack": [
+     12,
+     4
+    ],
+    "cast": [
+     16,
+     4
+    ],
+    "hit": [
+     20,
+     2
+    ],
+    "death": [
+     22,
+     6
+    ]
+   },
+   "scale": 0.75
+  },
+  "en_shadow": {
+   "fw": 243,
+   "fh": 157,
+   "footY": 108.0,
+   "cols": 16,
+   "perSide": 28,
+   "anims": {
+    "idle": [
+     0,
+     4
+    ],
+    "walk": [
+     4,
+     8
+    ],
+    "attack": [
+     12,
+     4
+    ],
+    "cast": [
+     16,
+     4
+    ],
+    "hit": [
+     20,
+     2
+    ],
+    "death": [
+     22,
+     6
+    ]
+   },
+   "scale": 0.75
+  }
+ },
+ "origins": {
+  "floor_catacombs_0": [
+   0.5,
+   0.5
+  ],
+  "floor_catacombs_1": [
+   0.5,
+   0.5
+  ],
+  "floor_catacombs_2": [
+   0.5,
+   0.5
+  ],
+  "floor_catacombs_3": [
+   0.5,
+   0.5
+  ],
+  "floor_catacombs_4": [
+   0.5,
+   0.5
+  ],
+  "floor_catacombs_5": [
+   0.5,
+   0.5
+  ],
+  "wall_catacombs_0": [
+   0.5,
+   0.8737
+  ],
+  "wall_catacombs_1": [
+   0.5,
+   0.8737
+  ],
+  "wall_catacombs_2": [
+   0.5,
+   0.8737
+  ],
+  "wall_catacombs_3": [
+   0.5,
+   0.8737
+  ],
+  "wall_catacombs_4": [
+   0.5,
+   0.8737
+  ],
+  "wall_catacombs_9": [
+   0.5,
+   0.8697
+  ],
+  "pillar_catacombs": [
+   0.3401,
+   0.9063
+  ],
+  "floor_ashlands_0": [
+   0.5,
+   0.5
+  ],
+  "floor_ashlands_1": [
+   0.5,
+   0.5
+  ],
+  "floor_ashlands_2": [
+   0.5,
+   0.5
+  ],
+  "floor_ashlands_3": [
+   0.5,
+   0.5
+  ],
+  "floor_ashlands_4": [
+   0.5,
+   0.5
+  ],
+  "floor_ashlands_5": [
+   0.5,
+   0.5
+  ],
+  "chest": [
+   0.5569,
+   0.7991
+  ],
+  "chest_open": [
+   0.5569,
+   0.7991
+  ],
+  "chest_elite": [
+   0.4006,
+   0.7712
+  ],
+  "chest_elite_open": [
+   0.4006,
+   0.7712
+  ],
+  "altar": [
+   0.4473,
+   0.7065
+  ],
+  "portal": [
+   0.2531,
+   0.5028
+  ],
+  "decal_bones": [
+   0.4827,
+   0.3856
+  ],
+  "wall_ashlands_0": [
+   0.5,
+   0.8737
+  ],
+  "wall_ashlands_1": [
+   0.5,
+   0.8737
+  ],
+  "wall_ashlands_2": [
+   0.5,
+   0.8737
+  ],
+  "wall_ashlands_3": [
+   0.5,
+   0.8737
+  ],
+  "wall_ashlands_4": [
+   0.5,
+   0.8737
+  ],
+  "wall_ashlands_9": [
+   0.5,
+   0.8697
+  ],
+  "pillar_ashlands": [
+   0.3401,
+   0.9063
+  ],
+  "floor_surface_0": [
+   0.5,
+   0.5
+  ],
+  "floor_surface_1": [
+   0.5,
+   0.5
+  ],
+  "floor_surface_2": [
+   0.5,
+   0.5
+  ],
+  "floor_surface_3": [
+   0.5,
+   0.5
+  ],
+  "floor_surface_4": [
+   0.5,
+   0.5
+  ],
+  "floor_surface_5": [
+   0.5,
+   0.5
+  ],
+  "sf_road_0": [
+   0.5,
+   0.5
+  ],
+  "sf_road_1": [
+   0.5,
+   0.5
+  ],
+  "sf_road_2": [
+   0.5,
+   0.5
+  ],
+  "sf_road_3": [
+   0.5,
+   0.5
+  ],
+  "sf_water_0": [
+   0.5,
+   0.5
+  ],
+  "sf_water_1": [
+   0.5,
+   0.5
+  ],
+  "sf_water_2": [
+   0.5,
+   0.5
+  ],
+  "sf_water_3": [
+   0.5,
+   0.5
+  ],
+  "sf_dock_0": [
+   0.5,
+   0.4286
+  ],
+  "sf_dock_1": [
+   0.5,
+   0.4286
+  ],
+  "sf_dock_2": [
+   0.5,
+   0.4286
+  ],
+  "sf_dock_3": [
+   0.5,
+   0.4286
+  ],
+  "sf_tree_dead_0": [
+   0.4622,
+   0.9003
+  ],
+  "sf_tree_dead_1": [
+   0.4514,
+   1.0157
+  ],
+  "sf_tree_dead_2": [
+   0.3705,
+   1.0124
+  ],
+  "sf_tree_dead_3": [
+   0.4199,
+   0.9398
+  ],
+  "sf_tree_pine_0": [
+   0.5042,
+   0.9142
+  ],
+  "sf_tree_pine_1": [
+   0.5168,
+   0.9282
+  ],
+  "sf_tree_pine_2": [
+   0.4886,
+   0.9512
+  ],
+  "sf_tree_pine_3": [
+   0.4825,
+   0.9129
+  ],
+  "sf_tree_oak_0": [
+   0.4986,
+   0.8951
+  ],
+  "sf_tree_oak_1": [
+   0.5014,
+   0.9167
+  ],
+  "sf_tree_oak_2": [
+   0.4891,
+   0.9557
+  ],
+  "sf_tree_oak_3": [
+   0.4551,
+   0.8933
+  ],
+  "sf_tree_ash_0": [
+   0.4576,
+   0.9583
+  ],
+  "sf_tree_ash_1": [
+   0.432,
+   0.9134
+  ],
+  "sf_tree_ash_2": [
+   0.432,
+   0.9231
+  ],
+  "sf_tree_ash_3": [
+   0.4451,
+   0.8939
+  ],
+  "sf_house_208": [
+   1.0,
+   0.8368
+  ],
+  "sf_house_208_burnt": [
+   1.0,
+   0.8368
+  ],
+  "sf_house_209": [
+   0.5,
+   0.8904
+  ],
+  "sf_house_209_burnt": [
+   0.5,
+   0.8904
+  ],
+  "sf_house_210": [
+   0.0,
+   0.8892
+  ],
+  "sf_house_210_burnt": [
+   0.0,
+   0.8892
+  ],
+  "sf_house_211": [
+   0.0,
+   0.8657
+  ],
+  "sf_house_211_burnt": [
+   0.0,
+   0.8657
+  ],
+  "sf_house_212": [
+   1.0,
+   0.8822
+  ],
+  "sf_house_212_burnt": [
+   1.0,
+   0.8822
+  ],
+  "sf_house_213": [
+   1.0,
+   0.9132
+  ],
+  "sf_house_213_burnt": [
+   1.0,
+   0.9132
+  ],
+  "sf_house_214": [
+   0.5,
+   0.9147
+  ],
+  "sf_house_214_burnt": [
+   0.5,
+   0.9147
+  ],
+  "sf_house_215": [
+   0.0,
+   0.8982
+  ],
+  "sf_house_215_burnt": [
+   0.0,
+   0.8982
+  ],
+  "sf_house_296": [
+   -0.0394,
+   0.8516
+  ],
+  "sf_tent_72": [
+   0.5,
+   0.7692
+  ],
+  "sf_tent_73": [
+   0.0,
+   0.7303
+  ],
+  "sf_tent_74": [
+   1.0,
+   0.7363
+  ],
+  "sf_tent_75": [
+   0.5,
+   0.7767
+  ],
+  "sf_chest_0": [
+   0.4545,
+   0.7347
+  ],
+  "sf_crate_0": [
+   0.4369,
+   0.6813
+  ],
+  "sf_crate_1": [
+   0.3913,
+   0.6979
+  ],
+  "sf_crate_2": [
+   0.4314,
+   0.6842
+  ],
+  "sf_crate_3": [
+   0.4,
+   0.7059
+  ],
+  "sf_logs_0": [
+   0.4885,
+   0.6701
+  ],
+  "sf_logs_1": [
+   0.4922,
+   0.6768
+  ],
+  "sf_campfire": [
+   0.4966,
+   0.7448
+  ],
+  "sf_anvil": [
+   0.5035,
+   0.6894
+  ],
+  "sf_fence_0": [
+   0.2441,
+   0.9124
+  ],
+  "sf_fence_1": [
+   0.589,
+   0.9423
+  ],
+  "sf_fence_2": [
+   0.2381,
+   0.8993
+  ],
+  "sf_fence_3": [
+   0.6443,
+   0.8705
+  ],
+  "sf_rock_0": [
+   0.6538,
+   0.7
+  ],
+  "sf_rock_1": [
+   0.5,
+   0.8158
+  ],
+  "sf_rock_2": [
+   0.3596,
+   0.6277
+  ],
+  "sf_rock_3": [
+   0.5053,
+   0.7595
+  ],
+  "sf_stone_0": [
+   0.4074,
+   0.8609
+  ],
+  "sf_stone_1": [
+   0.3846,
+   0.8814
+  ],
+  "sf_stone_2": [
+   0.432,
+   0.8784
+  ],
+  "sf_stone_3": [
+   0.3924,
+   0.8808
+  ],
+  "sf_stump_0": [
+   0.4504,
+   0.5962
+  ],
+  "sf_stump_1": [
+   0.5,
+   0.7188
+  ],
+  "sf_sign_0": [
+   0.4,
+   0.9583
+  ],
+  "sf_sign_1": [
+   0.4,
+   0.9583
+  ],
+  "sf_grave_0": [
+   0.4158,
+   0.8034
+  ],
+  "sf_grave_1": [
+   0.4216,
+   0.812
+  ],
+  "sf_grave_2": [
+   0.3953,
+   0.8421
+  ],
+  "sf_grave_3": [
+   0.4048,
+   0.843
+  ],
+  "sf_bush_0": [
+   0.4375,
+   0.6796
+  ],
+  "sf_bush_1": [
+   0.4231,
+   0.6548
+  ],
+  "sf_reed_0": [
+   0.5221,
+   0.775
+  ],
+  "sf_reed_1": [
+   0.4672,
+   0.7829
+  ],
+  "sf_plant_0": [
+   0.5528,
+   0.6774
+  ],
+  "sf_plant_1": [
+   0.4774,
+   0.6078
+  ],
+  "sf_tuft_0": [
+   0.4496,
+   0.7652
+  ],
+  "sf_tuft_1": [
+   0.5464,
+   0.7195
+  ],
+  "sf_tuft_2": [
+   0.4138,
+   0.693
+  ],
+  "sf_tuft_3": [
+   0.3426,
+   0.7711
+  ]
+ },
+ "images": [
+  "it_amulet",
+  "it_blades",
+  "it_boots",
+  "it_bow",
+  "it_chest",
+  "it_gem",
+  "it_gloves",
+  "it_gold",
+  "it_hammer",
+  "it_helm",
+  "it_hood",
+  "it_potion",
+  "it_ring",
+  "it_robe",
+  "it_scroll",
+  "it_shard",
+  "it_shield",
+  "it_staff",
+  "portrait_blade",
+  "portrait_bone",
+  "portrait_elder",
+  "portrait_shade",
+  "portrait_witch",
+  "quest_book",
+  "sk_blade_basic",
+  "sk_blade_dash",
+  "sk_blade_reap",
+  "sk_blade_whirl",
+  "sk_bone_basic",
+  "sk_bone_bastion",
+  "sk_bone_charge",
+  "sk_bone_quake",
+  "sk_dodge",
+  "sk_empty",
+  "sk_potion",
+  "sk_shade_basic",
+  "sk_shade_fan",
+  "sk_shade_trap",
+  "sk_shade_vault",
+  "sk_witch_basic",
+  "sk_witch_circle",
+  "sk_witch_fireball",
+  "sk_witch_wisps",
+  "ui_btn",
+  "ui_btn_down",
+  "ui_btn_hover",
+  "ui_btn_off"
+ ],
+ "fx": {
+  "fx_blast": {
+   "fw": 350,
+   "fh": 226,
+   "cols": 5,
+   "frames": 6,
+   "ms": 600,
+   "ox": 178,
+   "oy": 120
+  },
+  "fx_quake": {
+   "fw": 200,
+   "fh": 110,
+   "cols": 4,
+   "frames": 4,
+   "ms": 400,
+   "ox": 104,
+   "oy": 64
+  },
+  "fx_mist": {
+   "fw": 154,
+   "fh": 133,
+   "cols": 10,
+   "frames": 10,
+   "ms": 1000,
+   "ox": 77,
+   "oy": 115
+  }
+ },
+ "npcs": {
+  "npc_elder": {
+   "fw": 97,
+   "fh": 103,
+   "frames": 12,
+   "ms": 6400,
+   "footY": 97,
+   "scale": 0.75
+  },
+  "npc_guard": {
+   "fw": 92,
+   "fh": 102,
+   "frames": 4,
+   "ms": 1600,
+   "footY": 96,
+   "scale": 0.75
+  },
+  "npc_man": {
+   "fw": 83,
+   "fh": 105,
+   "frames": 4,
+   "ms": 1600,
+   "footY": 93,
+   "scale": 0.75
+  },
+  "npc_woman": {
+   "fw": 73,
+   "fh": 98,
+   "frames": 4,
+   "ms": 1600,
+   "footY": 94,
+   "scale": 0.75
+  }
+ }
+}
