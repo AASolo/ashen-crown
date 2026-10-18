@@ -19,6 +19,44 @@
 </head>
 <body>
   <div id="boot">ПЕПЕЛ ОСЕДАЕТ…</div>
+  <script>
+    // Если игра не запустилась, вместо чёрного экрана показываем причину (для отладки на телефонах).
+    (function () {
+      var lines = [];
+      function show(m) {
+        var b = document.getElementById('boot');
+        if (!b) { b = document.createElement('div'); b.id = 'boot'; document.body.appendChild(b); }
+        lines.push(m);
+        b.style.cssText += ';z-index:9;font:13px/1.4 monospace;letter-spacing:0;padding:16px;white-space:pre-wrap;place-items:center start;background:#070506';
+        b.textContent = 'Игра не запустилась:\n\n' + lines.join('\n') + '\n\n' + navigator.userAgent;
+      }
+      addEventListener('error', function (e) {
+        var t = e.target;
+        if (t && t !== window && (t.src || t.href)) show('не загрузился файл: ' + (t.src || t.href));
+        else show((e.message || 'ошибка') + (e.filename ? '\n  ' + e.filename.split('/').pop() + ':' + e.lineno : ''));
+      }, true);
+      addEventListener('unhandledrejection', function (e) {
+        var r = e.reason; show('promise: ' + (r && (r.message || r) || '?'));
+      });
+      // потеря WebGL (обычно нехватка памяти на телефоне) — тоже на экран
+      var lost = false;
+      addEventListener('webglcontextlost', function () { lost = true; show('WebGL-контекст потерян (не хватило видеопамяти?)'); }, true);
+      // через 25 с без меню — сообщаем, что видно изнутри, даже если ошибок не было
+      setTimeout(function () {
+        var g = window.__game;
+        if (g && g.scene && (g.scene.isActive('Menu') || g.scene.isActive('Game'))) return;
+        var info = 'нет меню через 25 с; Phaser: ' + (g ? 'создан' : 'не создан');
+        if (g && g.scene) {
+          info += '\nсцены: ' + g.scene.getScenes(true).map(function (x) { return x.sys.settings.key; }).join(', ');
+          var bs = g.scene.getScene('Boot'), ld = bs && bs.load;
+          if (ld) info += '\nзагрузка: ' + Math.round(ld.progress * 100) + '%, файлов осталось ' + ld.list.size + ', грузятся ' + ld.inflight.size + ', ошибок ' + ld.totalFailed;
+          if (g.renderer) info += '\nрендер: ' + (g.renderer.type === 2 ? 'WebGL' : 'Canvas') + ' ' + g.canvas.width + '×' + g.canvas.height;
+        }
+        if (lost) info += '\nконтекст WebGL потерян';
+        show(info);
+      }, 25000);
+    })();
+  </script>
   <div id="game"></div>
   <script type="module" src="/src/main.ts"></script>
 </body>
