@@ -56,6 +56,7 @@ function place(d: Dungeon, r: Recipe, x: number, y: number): Prop {
 
 /** Наложить сохранённые вырубки и постройки на свежесгенерированную поверхность (до создания Level). */
 export function applySurfaceEdits(d: Dungeon, D: HeroData) {
+  if ((D.surfW ?? 84) !== d.w) migrateSurface(d, D);
   d.felled = new Set(D.felled ?? []);
   for (const p of [...d.props]) {
     const i = p.y * d.w + p.x;
@@ -67,6 +68,32 @@ export function applySurfaceEdits(d: Dungeon, D: HeroData) {
     const r = RECIPES.find(q => q.id === b.r);
     if (r && footprint(r, b.x, b.y).every(([x, y]) => x > 0 && y > 0 && x < d.w - 1 && y < d.h - 1 && d.tiles[y * d.w + x] === T_FLOOR)) place(d, r, b.x, b.y);
   }
+}
+
+/** Сохранение со старой картой 84×84: постройки переезжают вслед за лагерем, вырубки сбрасываются
+ *  (лес вырос заново). Что не встало ни в одну клетку рядом, возвращается материалами. */
+function migrateSurface(d: Dungeon, D: HeroData) {
+  const C = d.poi?.camp ?? d.start, ox = C.x - 26, oy = C.y - 47; // 26,47 — центр лагеря на старой карте
+  const taken = new Set<number>();
+  const fits = (r: Recipe, x: number, y: number) => footprint(r, x, y).every(([fx, fy]) => {
+    const i = fy * d.w + fx;
+    return fx > 1 && fy > 1 && fx < d.w - 2 && fy < d.h - 2 && d.tiles[i] === T_FLOOR && !d.solid[i] && !d.road?.[i] && !taken.has(i);
+  });
+  const kept: { r: string; x: number; y: number }[] = [];
+  let wood = 0, stone = 0;
+  for (const b of D.builds ?? []) {
+    const r = RECIPES.find(q => q.id === b.r);
+    if (!r) continue;
+    let spot: [number, number] | null = null;
+    for (let rad = 0; rad <= 6 && !spot; rad++)
+      for (let dy = -rad; dy <= rad && !spot; dy++) for (let dx = -rad; dx <= rad && !spot; dx++)
+        if (Math.max(Math.abs(dx), Math.abs(dy)) === rad && fits(r, b.x + ox + dx, b.y + oy + dy)) spot = [b.x + ox + dx, b.y + oy + dy];
+    if (!spot) { wood += r.wood; stone += r.stone; continue; }
+    for (const [fx, fy] of footprint(r, spot[0], spot[1])) taken.add(fy * d.w + fx);
+    kept.push({ r: b.r, x: spot[0], y: spot[1] });
+  }
+  D.builds = kept; D.felled = []; D.surfW = d.w;
+  D.wood = (D.wood ?? 0) + wood; D.stone = (D.stone ?? 0) + stone;
 }
 
 export class BuildSystem {

@@ -2,7 +2,7 @@
 // отсечение невидимого, полупрозрачность стен перед героем, разрушаемые стены.
 import Phaser from 'phaser';
 import { ART } from '../config';
-import { isoToScreen, depthOf } from '../core/iso';
+import { isoToScreen, screenToIso, depthOf } from '../core/iso';
 import { RNG } from '../core/rng';
 import { EXT_LOADED, EXT_ORIGIN } from '../art/external';
 import { T_FLOOR, T_CRACKED, T_VOID, T_HOUSE, T_WATER, STRUCTS, type Dungeon, type Prop } from './DungeonGen';
@@ -30,6 +30,7 @@ export class Level {
   private all: Phaser.GameObjects.GameObject[] = [];
   private crackedHp = new Map<number, number>();
   private cullTick = 0;
+  private shown: number[] = []; // клетки, у которых пол или стена сейчас видимы
   private docks = new Set<number>();
   private forest = new Set<number>(); // клетки края с деревом (можно срубить)
   private rng = new RNG(1);
@@ -296,7 +297,16 @@ export class Level {
       const vis = this.explored[i] === 1 && img.x > L && img.x < R && img.y > T && img.y < B;
       if (img.visible !== vis) img.setVisible(vis);
     };
-    for (let i = 0; i < this.floor.length; i++) { test(this.floor[i], i); test(this.walls[i], i); }
+    // проверяем только клетки в ромбе камеры и те, что были видны в прошлый раз (поверхность 160×160 — это 25 тыс. картинок)
+    const cs = [screenToIso(L, T), screenToIso(R, T), screenToIso(L, B), screenToIso(R, B)];
+    const x0 = Math.max(0, Math.floor(Math.min(...cs.map(c => c.x))) - 2), x1 = Math.min(this.d.w - 1, Math.ceil(Math.max(...cs.map(c => c.x))) + 2);
+    const y0 = Math.max(0, Math.floor(Math.min(...cs.map(c => c.y))) - 2), y1 = Math.min(this.d.h - 1, Math.ceil(Math.max(...cs.map(c => c.y))) + 2);
+    const prev = this.shown, next: number[] = [];
+    if (force) for (let i = 0; i < this.floor.length; i++) { test(this.floor[i], i); test(this.walls[i], i); }
+    else for (const i of prev) { test(this.floor[i], i); test(this.walls[i], i); }
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const i = y * this.d.w + x; test(this.floor[i], i); test(this.walls[i], i); }
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const i = y * this.d.w + x; if (this.floor[i]?.visible || this.walls[i]?.visible) next.push(i); }
+    this.shown = next;
     for (const e of this.propSprites) {
       const i = this.idx(e.prop.x, e.prop.y);
       const vis = this.explored[i] === 1 && e.img.x > L && e.img.x < R && e.img.y > T && e.img.y < B;

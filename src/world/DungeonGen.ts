@@ -440,12 +440,15 @@ function placeSecret(d: Dungeon, r: RNG, dist: Int32Array) {
 // ─── Поверхность: пепелище у Ковен-Гейта ─────────────────────────
 // Открытая равнина под небом: по краям мёртвый лес (клетки T_VOID рисуются деревьями), внутри
 // сгоревшая деревня из обгоревших срубов, лагерь выживших, башня-мельница с волками, пруд и колодец-Разлом на севере.
+// Вокруг лагеря просторно: поляна под стройку, рощи для рубки, каменоломня и озеро на западе.
 // Раскладка ручная (опорные точки), детали случайны от seed героя.
 export interface SurfaceOpts { wolves: number }
+/** Сторона поверхности в клетках (было 84; сохранения со старым размером переносятся в Building.applySurfaceEdits). */
+export const SURFACE_SIZE = 160;
 
 export function generateSurface(seed: number, o: SurfaceOpts): Dungeon {
   const r = new RNG(seed);
-  const w = 84, h = 84;
+  const w = SURFACE_SIZE, h = SURFACE_SIZE;
   const d = blank(w, h, 'surface');
   const g = d.tiles;
   // поле с «рваным» краем: в полосе у края стены вероятнее, потом сглаживание
@@ -465,11 +468,15 @@ export function generateSurface(seed: number, o: SurfaceOpts): Dungeon {
   }
   const jit = (v: number) => v + r.int(-2, 2);
   const P = {
-    start: { x: jit(22), y: jit(70) },
-    camp: { x: jit(26), y: jit(47) },
-    village: { x: jit(47), y: jit(52) },
-    mill: { x: jit(65), y: jit(32) },
-    well: { x: jit(40), y: jit(13) },
+    start: { x: jit(46), y: jit(140) },
+    camp: { x: jit(52), y: jit(100) },
+    village: { x: jit(96), y: jit(106) },
+    mill: { x: jit(124), y: jit(58) },
+    well: { x: jit(80), y: jit(24) },
+    meadow: { x: jit(30), y: jit(84) },     // открытая поляна под постройки рядом с лагерем
+    quarry: { x: jit(40), y: jit(46) },     // каменоломня: валуны для камня
+    grove: { x: jit(112), y: jit(138) },    // густая роща на юго-востоке
+    lake: { x: jit(30), y: jit(124) },      // озеро у западной опушки
   };
   d.poi = P;
   const disc = (cx: number, cy: number, rad: number, t = T_FLOOR) => {
@@ -478,9 +485,9 @@ export function generateSurface(seed: number, o: SurfaceOpts): Dungeon {
   };
   // каменные глыбы посреди поля (дальше от опорных точек)
   const nearPoi = (x: number, y: number, k: number) => Object.values(P).some(p => Math.abs(p.x - x) + Math.abs(p.y - y) < k);
-  for (let k = 0; k < 14; k++) {
+  for (let k = 0; k < 44; k++) {
     const x = r.int(12, w - 13), y = r.int(12, h - 13);
-    if (!nearPoi(x, y, 13)) disc(x, y, r.int(1, 2), T_VOID);
+    if (!nearPoi(x, y, 15)) disc(x, y, r.int(1, 2), T_VOID);
   }
   // широкая дорога: старт → лагерь → деревня → мельница, лагерь → колодец
   const roadMask = d.road = new Uint8Array(w * h);
@@ -494,7 +501,9 @@ export function generateSurface(seed: number, o: SurfaceOpts): Dungeon {
     }
   };
   road(P.start, P.camp); road(P.camp, P.village); road(P.village, P.mill); road(P.camp, P.well);
-  disc(P.start.x, P.start.y, 3); disc(P.camp.x, P.camp.y, 7); disc(P.mill.x, P.mill.y, 9); disc(P.well.x, P.well.y, 6); disc(P.village.x, P.village.y, 6);
+  road(P.camp, P.quarry); road(P.village, P.grove);
+  disc(P.start.x, P.start.y, 3); disc(P.camp.x, P.camp.y, 10); disc(P.mill.x, P.mill.y, 9); disc(P.well.x, P.well.y, 6); disc(P.village.x, P.village.y, 7);
+  disc(P.meadow.x, P.meadow.y, 11); disc(P.quarry.x, P.quarry.y, 8); disc(P.grove.x, P.grove.y, 10); disc(P.lake.x, P.lake.y, 9);
 
   const V = P.village;
   const M = P.mill;
@@ -505,6 +514,12 @@ export function generateSurface(seed: number, o: SurfaceOpts): Dungeon {
   for (let y = Pd.y - 7; y <= Pd.y + 7; y++) for (let x = Pd.x - 8; x <= Pd.x + 8; x++) {
     if (!inside(d, x, y, 3)) continue;
     const k = ((x - Pd.x) / 6.5) ** 2 + ((y - Pd.y) / 4.8) ** 2 + r.range(-0.18, 0.18);
+    if (k <= 1) water.push(idx(d, x, y));
+  }
+  const Lk = P.lake;
+  for (let y = Lk.y - 8; y <= Lk.y + 8; y++) for (let x = Lk.x - 9; x <= Lk.x + 9; x++) {
+    if (!inside(d, x, y, 3)) continue;
+    const k = ((x - Lk.x) / 7.5) ** 2 + ((y - Lk.y) / 5.5) ** 2 + r.range(-0.15, 0.15);
     if (k <= 1) water.push(idx(d, x, y));
   }
   for (let x = Pd.x; x < w - 3; x++) {
@@ -552,12 +567,14 @@ export function generateSurface(seed: number, o: SurfaceOpts): Dungeon {
     }
     return false;
   };
-  // лагерь: два целых сруба и палатки за кругом жителей; в деревне — два обгоревших сруба
+  // лагерь: срубы и палатки за кругом жителей; в деревне — обгоревшие срубы
   struct('house_a', C.x + 6, C.y - 3); struct('house_b', C.x - 4, C.y - 6);
   struct('tent_a', C.x - 6, C.y + 2); struct('tent_b', C.x + 3, C.y + 6);
+  struct('tent_a', C.x + 8, C.y + 4); struct('house_b', C.x - 1, C.y - 9);
   struct('house_a', V.x - 6, V.y - 5, true); struct('house_b', V.x + 6, V.y - 6, true);
   struct('house_b', V.x - 6, V.y + 6, true); struct('house_a', V.x + 7, V.y + 6, true);
   struct('house_a', V.x - 1, V.y - 9, true);
+  struct('house_b', V.x + 12, V.y, true); struct('house_a', V.x - 11, V.y + 1, true);
   struct('tower', M.x + 1, M.y - 2);
   // лагерь: костёр в центре, повозки и знамёна по кругу, алтарь возрождения
   add({ type: 'campfire', x: C.x, y: C.y, solid: false });
@@ -569,8 +586,8 @@ export function generateSurface(seed: number, o: SurfaceOpts): Dungeon {
   }
   // указатели на развилках и заборы у лагеря
   for (const [x, y] of [[P.start.x + 3, P.start.y - 3], [C.x + 8, C.y + 3], [V.x - 1, V.y - 4]]) if (free(x, y) && !used.has(idx(d, x, y))) add({ type: 'sign', x, y, solid: true, v: r.int(0, 1) });
-  for (let k = 0; k < 10; k++) {
-    const a = r.range(0, Math.PI * 2), x = Math.round(C.x + Math.cos(a) * 8), y = Math.round(C.y + Math.sin(a) * 8);
+  for (let k = 0; k < 16; k++) {
+    const a = r.range(0, Math.PI * 2), x = Math.round(C.x + Math.cos(a) * 11), y = Math.round(C.y + Math.sin(a) * 11);
     if (free(x, y) && !used.has(idx(d, x, y)) && !roadMask[idx(d, x, y)] && openAround(x, y)) add({ type: 'fence', x, y, solid: true, v: r.int(0, 3) });
   }
   // камыш и камни по берегу пруда
@@ -582,27 +599,45 @@ export function generateSurface(seed: number, o: SurfaceOpts): Dungeon {
     else if (r.chance(0.12) && openAround(x, y)) add({ type: 'rock', x, y, solid: true, v: r.int(0, 3) });
   }
   // фонари вдоль дороги и у колодца
-  for (const [x, y] of [[P.start.x + 2, P.start.y - 1], [P.well.x - 3, P.well.y + 2], [P.well.x + 3, P.well.y + 2], [M.x - 6, M.y + 2]]) if (free(x, y)) add({ type: 'brazier', x, y, solid: false });
+  for (const [x, y] of [[P.start.x + 2, P.start.y - 1], [P.well.x - 3, P.well.y + 2], [P.well.x + 3, P.well.y + 2], [M.x - 6, M.y + 2], [P.meadow.x + 7, P.meadow.y + 4], [P.quarry.x + 4, P.quarry.y + 5]]) if (free(x, y)) add({ type: 'brazier', x, y, solid: false });
   // кладбище у деревни
   for (let k = 0; k < 7; k++) { const x = V.x + r.int(-3, 3), y = V.y + r.int(8, 11); if (openAround(x, y) && !used.has(idx(d, x, y))) add({ type: 'grave', x, y, solid: true }); }
+  // рощи для рубки: густо в роще на юго-востоке и пятнами у лагеря (не на поляне под стройку)
+  const Mw = P.meadow;
+  const offMeadow = (x: number, y: number) => (x - Mw.x) ** 2 + (y - Mw.y) ** 2 > 12 * 12;
+  const grove = (cx: number, cy: number, rad: number, n: number) => {
+    for (let k = 0, m = 0; k < n * 12 && m < n; k++) {
+      const x = cx + r.int(-rad, rad), y = cy + r.int(-rad, rad);
+      if ((x - cx) ** 2 + (y - cy) ** 2 > rad * rad || roadMask[idx(d, x, y)] || !offMeadow(x, y)) continue;
+      if (openAround(x, y) && !used.has(idx(d, x, y))) { add({ type: 'tree', x, y, solid: true }); m++; }
+    }
+  };
+  grove(P.grove.x, P.grove.y, 9, 34);
+  grove(C.x - 16, C.y + 14, 5, 10); grove(C.x + 18, C.y - 16, 5, 10); grove(P.quarry.x + 14, P.quarry.y - 6, 5, 9);
   // мёртвые деревья в поле
-  for (let k = 0; k < 900 && d.props.filter(p => p.type === 'tree').length < 46; k++) {
+  let trees = d.props.filter(p => p.type === 'tree').length;
+  for (let k = 0; k < 4000 && trees < 230; k++) {
     const x = r.int(4, w - 5), y = r.int(4, h - 5);
-    if (openAround(x, y) && !nearPoi(x, y, 8) && !used.has(idx(d, x, y))) add({ type: 'tree', x, y, solid: true });
+    if (openAround(x, y) && !nearPoi(x, y, 9) && !used.has(idx(d, x, y))) { add({ type: 'tree', x, y, solid: true }); trees++; }
+  }
+  // каменоломня: валуны кольцом вокруг ямы
+  for (let k = 0, n = 0; k < 200 && n < 14; k++) {
+    const a = r.range(0, Math.PI * 2), rr = r.range(3, 7), x = Math.round(P.quarry.x + Math.cos(a) * rr), y = Math.round(P.quarry.y + Math.sin(a) * rr);
+    if (openAround(x, y) && !used.has(idx(d, x, y)) && !roadMask[idx(d, x, y)]) { add({ type: 'rock', x, y, solid: true, v: r.int(0, 3) }); n++; }
   }
   // сундуки в руинах
   for (const [x, y] of [[V.x - 7, V.y - 6], [V.x + 9, V.y + 4], [M.x + 3, M.y - 2]]) if (free(x, y) && !used.has(idx(d, x, y))) add({ type: 'chest', x, y, solid: false });
   // декор: пепел и кости, сухая трава, кусты, пни и валуны
   const decor: PropType[] = ['ashpile', 'ashpile', 'rubble', 'bones', 'blood', 'rubble', 'tuft', 'tuft', 'tuft', 'bush', 'stump'];
-  for (let k = 0; k < 240; k++) {
+  for (let k = 0; k < 820; k++) {
     const x = r.int(3, w - 4), y = r.int(3, h - 4);
-    if (!free(x, y) || used.has(idx(d, x, y)) || Math.abs(x - C.x) + Math.abs(y - C.y) < 5) continue;
+    if (!free(x, y) || used.has(idx(d, x, y)) || Math.abs(x - C.x) + Math.abs(y - C.y) < 5 || !offMeadow(x, y)) continue;
     const t = r.pick(decor);
     const solid = t === 'stump' && openAround(x, y);
     if (t === 'stump' && !solid) continue;
     add({ type: t, x, y, solid, v: r.int(0, t === 'stump' ? 1 : t === 'bush' ? 1 : 3) });
   }
-  for (let k = 0, n = 0; k < 80 && n < 10; k++) { // валуны в поле
+  for (let k = 0, n = 0; k < 300 && n < 34; k++) { // валуны в поле
     const x = r.int(6, w - 7), y = r.int(6, h - 7);
     if (openAround(x, y) && !used.has(idx(d, x, y)) && !nearPoi(x, y, 9) && !roadMask[idx(d, x, y)]) { add({ type: 'rock', x, y, solid: true, v: r.int(0, 3) }); n++; }
   }
@@ -620,6 +655,10 @@ export function generateSurface(seed: number, o: SurfaceOpts): Dungeon {
   pack(V.x + 6, V.y - 14, 3, 'ghoul', 3);
   pack((C.x + P.well.x) >> 1, (C.y + P.well.y) >> 1, 3, 'ghoul', 3);
   pack(P.well.x, P.well.y + 6, 2, 'cultist', 3);
+  // дальние уголки: гули у каменоломни, стая в роще, культисты на северо-востоке
+  pack(P.quarry.x + 2, P.quarry.y - 10, 3, 'ghoul', 3);
+  pack(P.grove.x + 4, P.grove.y - 4, 3, 'wolf', 4);
+  pack((P.well.x + M.x) >> 1, (P.well.y + M.y) >> 1, 2, 'cultist', 3);
   d.rooms = Object.values(P).map(p => ({ x: p.x - 3, y: p.y - 3, w: 7, h: 7, cx: p.x, cy: p.y }));
   d.seed = seed;
   return d;

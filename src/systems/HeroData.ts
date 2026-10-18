@@ -33,6 +33,7 @@ export interface HeroData {
   stone?: number;
   builds?: { r: string; x: number; y: number }[];
   felled?: number[];                       // клетки срубленных деревьев и разбитых камней
+  surfW?: number;                          // сторона поверхности, под которую записаны builds/felled (нет — старая, 84)
 }
 
 export function newHero(classId: ClassId, difficulty = 0): HeroData {
