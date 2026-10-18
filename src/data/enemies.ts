@@ -1,4 +1,4 @@
-// Враги прототипа: 3 обычных типа, призываемая тень и босс.
+// Враги: 5 обычных типов, призываемая тень и босс.
 // Остальные 30+ типов из GDD добавляются записью сюда + спрайтом в art/CharacterArt.ts.
 
 export type AttackKind = 'melee' | 'lunge' | 'ranged';
@@ -17,6 +17,7 @@ export interface EnemyDef {
   windup: number;        // время замаха (видимое предупреждение)
   cooldown: number;
   projSpeed?: number;
+  proj?: string;         // текстура снаряда (по умолчанию сгусток пустоты)
   keepDistance?: number; // дальнобойные держат дистанцию
   aggro: number;         // радиус обнаружения
   scale: number;         // масштаб спрайта
@@ -34,6 +35,14 @@ export const ENEMIES: Record<string, EnemyDef> = {
   cultist: {
     id: 'cultist', name: 'Жрец Пустого Солнца', art: 'cultist', hp: 28, dmg: 9, speed: 2.3, radius: 0.32, xp: 16,
     attack: 'ranged', range: 7.5, windup: 0.7, cooldown: 2.2, projSpeed: 6.5, keepDistance: 4.8, aggro: 10, scale: 1,
+  },
+  archer: {
+    id: 'archer', name: 'Костяной лучник', art: 'archer', hp: 24, dmg: 8, speed: 2.4, radius: 0.3, xp: 15,
+    attack: 'ranged', range: 8.5, windup: 0.6, cooldown: 2.0, projSpeed: 10, proj: 'proj_arrow', keepDistance: 5.5, aggro: 11, scale: 1,
+  },
+  brute: {
+    id: 'brute', name: 'Пепельный минотавр', art: 'brute', hp: 120, dmg: 16, speed: 2.0, radius: 0.5, xp: 45,
+    attack: 'melee', range: 1.6, windup: 0.75, cooldown: 2.1, aggro: 9, scale: 1,
   },
   shadow: {
     id: 'shadow', name: 'Тень Глашатая', art: 'shadow', hp: 16, dmg: 6, speed: 4.0, radius: 0.3, xp: 4,

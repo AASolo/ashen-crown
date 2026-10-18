@@ -29,6 +29,10 @@ export interface HeroData {
   seed: number;
   quest?: number;                          // активный шаг пролога (data/quests.ts); нет — пролог пройден
   qProg?: number;                          // счётчик шага (убитые волки, маска зажжённых огней)
+  wood?: number;                           // стройка на поверхности (systems/Building.ts)
+  stone?: number;
+  builds?: { r: string; x: number; y: number }[];
+  felled?: number[];                       // клетки срубленных деревьев и разбитых камней
 }
 
 export function newHero(classId: ClassId, difficulty = 0): HeroData {

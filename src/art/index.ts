@@ -66,6 +66,8 @@ export function registerArt(scene: Phaser.Scene, onProgress?: (p: number) => voi
     steps.push([key, 'chars', () => (EXT_LOADED.has(key) ? addExtSheet(scene, key, SHEETS) : f())]);
   for (const cls of ['blade', 'witch', 'bone', 'shade']) charJob(`hero_${cls}`, () => addSheet(scene, `hero_${cls}`, humanoidSheet(SKINS[cls], 128, 176, 160), 128, 176, 160));
   for (const en of ['ghoul', 'cultist', 'shadow']) charJob(`en_${en}`, () => addSheet(scene, `en_${en}`, humanoidSheet(SKINS[en], 128, 176, 160), 128, 176, 160));
+  charJob('en_archer', () => addSheet(scene, 'en_archer', humanoidSheet(SKINS.cultist, 128, 176, 160), 128, 176, 160));
+  charJob('en_brute', () => addSheet(scene, 'en_brute', humanoidSheet(SKINS.ghoul, 128, 176, 160), 128, 176, 160));
   charJob('en_herald', () => addSheet(scene, 'en_herald', humanoidSheet(SKINS.herald, 256, 336, 318), 256, 336, 318));
   charJob('en_wolf', () => addSheet(scene, 'en_wolf', wolfSheet(176, 120, 108), 176, 120, 108));
   job('wisp', 'fx', drawWisp);

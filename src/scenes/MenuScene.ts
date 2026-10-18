@@ -122,47 +122,51 @@ export class MenuScene extends Phaser.Scene {
 
   private buildClassSelect(L: Phaser.GameObjects.Container) {
     const W = this.scale.width, H = this.scale.height;
-    const cardW = 290, cardH = 470, gap = 16;
-    const totalW = cardW * 4 + gap * 3;
-    const s = Math.min(this.s, (W * 0.97) / totalW, (H * 0.97) / (cardH + 200));
+    const cardW = 290, cardH = 500, gap = 16;
+    // на вертикальном экране карточки встают сеткой 2×2
+    const cols = H > W ? 2 : 4, rows = 4 / cols;
+    const totalW = cardW * cols + gap * (cols - 1), totalH = cardH * rows + gap * (rows - 1);
+    const s = Math.min(this.s, (W * 0.97) / totalW, (H * 0.97) / (totalH + 262 + (4 / cols - 1) * 46));
     L.add(title(this, W / 2, 16 * s, 'Выберите героя', 40, s).setScale(s));
     const x0 = (W - totalW * s) / 2, y0 = 80 * s;
     CLASS_ORDER.forEach((id, i) => {
       const c = CLASSES[id];
-      const card = this.add.container(x0 + i * (cardW + gap) * s, y0).setScale(s);
+      const card = this.add.container(x0 + (i % cols) * (cardW + gap) * s, y0 + Math.floor(i / cols) * (cardH + gap) * s).setScale(s);
       const sel = this.chosen === id;
       card.add(panel(this, cardW, cardH, sel ? 0.97 : 0.85));
       if (sel) { const g = this.add.graphics(); g.lineStyle(3, 0xff8a3a, 1); g.strokeRect(2, 2, cardW - 4, cardH - 4); card.add(g); }
-      // портрет маслом (FLARE) в рамке; анимированная фигурка героя стоит в его правом нижнем углу
+      // большой портрет маслом (FLARE) во всю ширину карточки; фигурка героя в игре стоит перед ним справа внизу
+      const P = cardW - 28;
       const hasPortrait = this.textures.exists(`portrait_${id}`);
-      const fx = hasPortrait ? cardW - 52 : cardW / 2, fy = hasPortrait ? 204 : 200, fs = hasPortrait ? 0.8 : 1.05;
-      if (hasPortrait) card.add(this.add.image(cardW / 2 - 10, 100, `portrait_${id}`).setDisplaySize(176, 176).setAlpha(sel ? 1 : 0.82));
-      const glow = this.add.image(fx, fy - 50, 'glow').setTint(c.resource.color).setAlpha(sel ? 0.45 : 0.2).setScale(hasPortrait ? 1.2 : 2.2, 1.2).setBlendMode(Phaser.BlendModes.ADD);
+      if (hasPortrait) card.add(this.add.image(cardW / 2, 14 + P / 2, `portrait_${id}`).setDisplaySize(P, P).setAlpha(sel ? 1 : 0.85));
+      const fx = hasPortrait ? cardW - 50 : cardW / 2, fy = hasPortrait ? 14 + P - 6 : 200, fs = hasPortrait ? 1.0 : 1.05;
+      const glow = this.add.image(fx, fy - 50, 'glow').setTint(c.resource.color).setAlpha(sel ? 0.5 : 0.22).setScale(1.3, 1.4).setBlendMode(Phaser.BlendModes.ADD);
       const sh = this.add.image(fx, fy - 4, 'shadow').setScale(1.4 * fs);
       const spr = this.add.sprite(fx, fy, `hero_${id}`, 0).setOrigin(0.5, SHEETS[`hero_${id}`].footY / SHEETS[`hero_${id}`].fh).setScale(fs / (SHEETS[`hero_${id}`].scale ?? 1));
       spr.play(sel ? `hero_${id}_walk_S` : `hero_${id}_idle_S`);
       card.add([glow, sh, spr]);
-      card.add(title(this, cardW / 2, 214, c.name, 23, s));
-      card.add(txt(this, cardW / 2, 248, c.role, 14, '#c89a6a', { fontStyle: 'bold' }, s).setOrigin(0.5, 0));
-      card.add(txt(this, 18, 274, c.desc, 13, UI.text, { wordWrap: { width: cardW - 36 }, lineSpacing: 2 }, s));
-      const skills = [c.basic, ...c.skills].map(k => '• ' + SKILLS[k].name).join('\n');
-      card.add(txt(this, 18, 352, `Ресурс: ${c.resource.name}\n${skills}`, 13, '#b8a58a', { lineSpacing: 2 }, s));
+      const ty = 14 + P + 8;
+      card.add(title(this, cardW / 2, ty, c.name, 23, s));
+      card.add(txt(this, cardW / 2, ty + 32, c.role, 14, '#c89a6a', { fontStyle: 'bold' }, s).setOrigin(0.5, 0));
+      card.add(txt(this, 18, ty + 56, c.desc, 13, UI.text, { wordWrap: { width: cardW - 36 }, lineSpacing: 1 }, s));
+      const skills = [c.basic, ...c.skills].map(k => SKILLS[k].name).join(' · ');
+      card.add(txt(this, 18, ty + 126, `Ресурс: ${c.resource.name}\n${skills}`, 12, '#b8a58a', { lineSpacing: 2, wordWrap: { width: cardW - 36 } }, s));
       const z = this.add.zone(0, 0, cardW, cardH).setOrigin(0).setInteractive({ useHandCursor: true });
       z.on('pointerdown', () => { Sfx.unlock(); Sfx.play('ui'); this.chosen = id; this.confirmNew = false; this.build('class'); });
       card.add(z);
       L.add(card);
     });
     // сложность
-    const dy = y0 + (cardH + 18) * s;
+    const dy = y0 + (totalH + 18) * s;
     L.add(txt(this, W / 2, dy, 'Сложность', 18, '#c8a878', { fontStyle: 'bold' }, s).setOrigin(0.5, 0).setScale(s));
-    const dw = 220;
+    const dw = 220, ex = (4 / cols - 1) * 46;  // лишняя строка кнопок сложности на телефоне
     DIFFICULTIES.forEach((d, i) => {
       const b = button(this, 0, 0, dw, 38, (this.difficulty === i ? '◆ ' : '') + d.name, () => { this.difficulty = i; this.build('class'); }, s, 16);
-      b.cont.setPosition(W / 2 + (i - 2) * (dw + 10) * s + 5 * s, dy + 28 * s).setScale(s);
+      b.cont.setPosition(W / 2 + ((i % cols) - cols / 2) * (dw + 10) * s + 5 * s, dy + (28 + Math.floor(i / cols) * 46) * s).setScale(s);
       L.add(b.cont);
     });
     const D = DIFFICULTIES[this.difficulty];
-    L.add(txt(this, W / 2, dy + 74 * s, `Здоровье врагов ×${D.hp}, урон ×${D.dmg}, добыча ×${D.loot}, опыт ×${D.xp}`, 14, UI.textDim, {}, s).setOrigin(0.5, 0).setScale(s));
+    L.add(txt(this, W / 2, dy + (74 + ex) * s, `Здоровье врагов ×${D.hp}, урон ×${D.dmg}, добыча ×${D.loot}, опыт ×${D.xp}`, 14, UI.textDim, {}, s).setOrigin(0.5, 0).setScale(s));
     const hasSave = SaveSystem.exists();
     const start = button(this, 0, 0, 300, 48, this.confirmNew ? 'Точно? Старый герой исчезнет' : 'Начать путь', () => {
       if (hasSave && !this.confirmNew) { this.confirmNew = true; this.build('class'); return; }
@@ -170,9 +174,9 @@ export class MenuScene extends Phaser.Scene {
       SaveSystem.save(hero);
       this.startGame(hero);
     }, s, 18);
-    start.cont.setPosition(W / 2 + 10 * s, dy + 104 * s).setScale(s);
+    start.cont.setPosition(W / 2 + 10 * s, dy + (104 + ex) * s).setScale(s);
     const back = button(this, 0, 0, 160, 48, 'Назад', () => { this.confirmNew = false; this.build('main'); }, s, 18);
-    back.cont.setPosition(W / 2 - 180 * s, dy + 104 * s).setScale(s);
+    back.cont.setPosition(W / 2 - 180 * s, dy + (104 + ex) * s).setScale(s);
     L.add([start.cont, back.cont]);
   }
 
