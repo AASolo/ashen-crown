@@ -31,6 +31,13 @@
 | `npc_elder`, `npc_guard`, `npc_man`, `npc_woman` (жители лагеря) | images/npcs/guild_man, knight, peasant_man1, peasant_woman1 (кадры стойки из animations/npcs/*.txt, направление на камеру, уменьшены) |
 | `quest_book` (дневник Сайласа) | loot/book (обрезан, цветокоррекция) |
 | `ui_btn`, `ui_btn_hover`, `ui_btn_down`, `ui_btn_off` (кнопки) | menus/buttons/button_default (строки состояний разрезаны на отдельные файлы) |
+| `ui_panel`, `ui_tip` (окна и подсказки) | menus/modal_window, menus/tooltips (перекрашены в тёплые бурые тона) |
+| `ui_slot`, `ui_slot_hover` (ячейки кнопок) | menus/slot_empty, menus/slot_selected |
+| `ui_mm_frame` (рамка мини-карты) | menus/minimap (вырезана рамка без полосы заголовка, перекрашена) |
+| `ui_bar_boss_bg`, `ui_bar_boss` (полоса здоровья босса) | menus/bar_enemy_hp_background (вариант с черепами), menus/bar_enemy_hp |
+| `ui_arrow` (стрелка к цели задания) | menus/buttons/up (бронзовое состояние) |
+| `ui_close`, `ui_close_hover` (крестик окна) | menus/buttons/button_x |
+| `ui_ic_char`, `ui_ic_bag`, `ui_ic_skills`, `ui_ic_journal` (значки кнопок) | menus/actionbar_trim (белые глифы панели действий); `ui_ic_build`, `ui_ic_map`, `ui_ic_menu` нарисованы в том же стиле скриптом `tools/flare/build_ui_fx.py` |
 | `floor_surface_*`, `sf_road_*`, `sf_water_*`, `sf_dock_*` (земля, мостовая, вода, мостки поверхности) | tilesets/tileset_grassland, tileset_grassland_water (трава перекрашена в сухую, вода осветлена, у мостков обрезана тень) |
 | `sf_tree_*` (мёртвые деревья, ели, осенние дубы, пепельные берёзы) | tilesets/tileset_grassland (листва перекрашена в ржавые и пепельные тона, хвоя приглушена) |
 | `sf_house_*`, `sf_tent_*` (срубы, обгоревшие срубы, башня-мельница, палатки) | tilesets/tileset_grassland, разбивка по клеткам как в картах FLARE (frontier_outpost, black_oak_farm); обгоревшие варианты перекрашены |

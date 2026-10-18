@@ -168,6 +168,70 @@ for key, name in NPCS.items():
     out.save(f'{OUT}/{key}.webp', 'WEBP', quality=88, method=6)
     npc_meta[key] = {'fw': fw, 'fh': fh, 'frames': n, 'ms': dur, 'footY': round(T * NPC_SCALE) + 1, 'scale': 0.75}
 
+
+# --- Интерфейс в игре: панели, слоты, полосы, рамка мини-карты, стрелка, крестик, значки кнопок ---
+M = f'{IMG}/menus'
+def warm(im: Image.Image, k=0.55) -> Image.Image:
+    """Зелёно-серая кожа меню FLARE → тёплая тёмно-бурая, как остальной интерфейс."""
+    a = im.getchannel('A'); rgb = im.convert('RGB')
+    from PIL import ImageOps
+    rgb = Image.blend(rgb, ImageOps.colorize(ImageOps.grayscale(rgb), (8, 5, 4), (200, 160, 120), mid=(70, 48, 36)), k)
+    rgb.putalpha(a)
+    return rgb
+save(warm(Image.open(f'{M}/modal_window.png').convert('RGBA')), 'ui_panel', 90)          # окно с полосой заголовка
+save(warm(Image.open(f'{M}/tooltips.png').convert('RGBA').resize((256, 256), Image.LANCZOS), 0.3), 'ui_tip', 90)
+save(Image.open(f'{M}/slot_empty.png').convert('RGBA'), 'ui_slot', 92)
+save(Image.open(f'{M}/slot_selected.png').convert('RGBA'), 'ui_slot_hover', 92)
+mm = Image.open(f'{M}/minimap.png').convert('RGBA')
+fr = warm(mm.crop((0, 32, 256, 288)), 0.6)
+hole = Image.new('L', fr.size, 255); hole.paste(0, (10, 10, fr.width - 10, fr.height - 10))
+fr.putalpha(ImageChops.multiply(fr.getchannel('A'), hole))
+save(fr, 'ui_mm_frame', 90)                                                                  # только рамка, без полосы заголовка
+save(Image.open(f'{M}/bar_enemy_hp_background.png').convert('RGBA').crop((0, 32, 256, 64)), 'ui_bar_boss_bg', 92)  # с черепами по краям
+save(Image.open(f'{M}/bar_enemy_hp.png').convert('RGBA'), 'ui_bar_boss', 92)
+save(Image.open(f'{M}/buttons/up.png').convert('RGBA').crop((0, 112, 42, 168)), 'ui_arrow', 92)     # бронзовое состояние
+bx = Image.open(f'{M}/buttons/button_x.png').convert('RGBA')
+save(bx.crop((0, 0, 64, 38)), 'ui_close', 92); save(bx.crop((0, 76, 64, 114)), 'ui_close_hover', 92)
+
+# значки кнопок: белые глифы как на панели действий FLARE (персонаж, сумка, навыки, журнал) + свои нарисованные (молоток, карта, меню)
+trim = Image.open(f'{M}/actionbar_trim.png').convert('RGBA')
+def glyph_from_trim(x0: int) -> Image.Image:
+    sq = trim.crop((x0, 6, x0 + 58, 64)).resize((64, 64), Image.LANCZOS)
+    r, g, b, a = sq.split()
+    lum = ImageChops.lighter(ImageChops.lighter(r, g), b)
+    m = lum.point(lambda v: max(0, min(255, (v - 150) * 4)))
+    out = Image.new('RGBA', sq.size, (240, 230, 214, 0)); out.putalpha(m)
+    return out
+def glyph(draw_fn) -> Image.Image:
+    """Свой белый глиф в духе панели FLARE: рисуем в 4× и уменьшаем, чтобы края были мягкими."""
+    from PIL import ImageDraw
+    m = Image.new('L', (256, 256)); draw_fn(ImageDraw.Draw(m))
+    out = Image.new('RGBA', (64, 64), (240, 230, 214, 0)); out.putalpha(m.resize((64, 64), Image.LANCZOS))
+    return out
+def draw_hammer(d):   # молоток по диагонали: рукоять и боёк
+    d.polygon([(70, 214), (52, 196), (150, 98), (168, 116)], fill=255)
+    d.polygon([(118, 58), (162, 26), (232, 96), (198, 140)], fill=255)
+    d.polygon([(166, 114), (142, 90), (152, 80), (176, 104)], fill=0)
+def draw_map(d):      # сложенная карта: три панели и метка-крест
+    d.polygon([(28, 70), (96, 44), (96, 200), (28, 226)], fill=255)
+    d.polygon([(104, 44), (152, 70), (152, 226), (104, 200)], fill=255)
+    d.polygon([(160, 70), (228, 44), (228, 200), (160, 226)], fill=255)
+    d.line([(176, 104), (210, 138)], fill=0, width=12); d.line([(210, 104), (176, 138)], fill=0, width=12)
+    d.line([(48, 180), (80, 150), (120, 160), (140, 130)], fill=0, width=8)
+def with_shadow(gl: Image.Image) -> Image.Image:
+    sh = Image.new('RGBA', gl.size, (0, 0, 0, 0)); sh.putalpha(gl.getchannel('A').filter(ImageFilter.GaussianBlur(2)).point(lambda v: min(255, v * 2)))
+    out = Image.new('RGBA', gl.size); out.alpha_composite(sh, (1, 2)); out.alpha_composite(gl)
+    return out
+for key, x0 in (('ui_ic_char', 960), ('ui_ic_bag', 1024), ('ui_ic_skills', 1088), ('ui_ic_journal', 1152)):
+    save(with_shadow(glyph_from_trim(x0)), key, 92)
+save(with_shadow(glyph(draw_hammer)), 'ui_ic_build', 92)
+save(with_shadow(glyph(draw_map)), 'ui_ic_map', 92)
+menu = Image.new('RGBA', (64, 64), (240, 230, 214, 0)); mm_ = Image.new('L', (64, 64))
+from PIL import ImageDraw
+d = ImageDraw.Draw(mm_)
+for y in (18, 30, 42): d.rounded_rectangle((14, y, 50, y + 6), 3, fill=255)
+menu.putalpha(mm_); save(with_shadow(menu), 'ui_ic_menu', 92)
+
 man_path = f'{OUT}/manifest.json'
 man = json.load(open(man_path))
 man['images'] = sorted(images)
