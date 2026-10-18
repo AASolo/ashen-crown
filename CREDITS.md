@@ -17,6 +17,9 @@
 | `en_ghoul` | enemies/zombie |
 | `en_cultist` | enemies/skeleton_mage |
 | `en_shadow` | enemies/skeleton (перекрашен) |
+| `en_herald` (Глашатай Пустого Солнца) | мод empyrean_campaign: enemies/skeleton_mage_high_boss (перекрашен в обугленную бронзу, увеличен в 1,45 раза) |
+| `en_archer` (костяной лучник) | enemies/skeleton_archer (перекрашен в пепел) |
+| `en_brute` (пепельный минотавр) | enemies/minotaur (перекрашен, увеличен в 1,1 раза) |
 | `floor_catacombs_*`, `wall_catacombs_*`, `wall_ashlands_*`, `pillar_catacombs`, `pillar_ashlands`, `altar`, `chest*`, `portal`, `decal_bones` | tilesets/tileset_dungeon |
 | `floor_ashlands_*` | tilesets/tileset_cave (перекрашен) |
 | курсор | cursors/cursor_normal |
@@ -32,6 +35,16 @@
 | `sf_tree_*` (мёртвые деревья, ели, осенние дубы, пепельные берёзы) | tilesets/tileset_grassland (листва перекрашена в ржавые и пепельные тона, хвоя приглушена) |
 | `sf_house_*`, `sf_tent_*` (срубы, обгоревшие срубы, башня-мельница, палатки) | tilesets/tileset_grassland, разбивка по клеткам как в картах FLARE (frontier_outpost, black_oak_farm); обгоревшие варианты перекрашены |
 | `sf_crate_*`, `sf_logs_*`, `sf_campfire`, `sf_anvil`, `sf_fence_*`, `sf_rock_*`, `sf_stone_*`, `sf_stump_*`, `sf_sign_*`, `sf_grave_*`, `sf_bush_*`, `sf_reed_*`, `sf_plant_*`, `sf_tuft_*`, `sf_chest_0` | tilesets/tileset_grassland (растения перекрашены в сухие тона) |
+
+## 3D-модели 0 A.D. (CC-BY-SA 3.0, добавлено 18.10.2026)
+
+Источник: игра **0 A.D.**, © Wildfire Games (http://www.wildfiregames.com/), https://github.com/0ad/0ad (коммит 61a3b950), каталог `binaries/data/mods/public/art/`. Лицензия: CC-BY-SA 3.0, http://creativecommons.org/licenses/by-sa/3.0/. Модели отрендерены в изометрию тем же ракурсом и светом, что и графика FLARE (`tools/render/render_0ad.py`, Blender 4.2). Получившиеся картинки распространяются под CC-BY-SA 3.0.
+
+| Файл в игре | Модель, анимации, текстура | Что изменено |
+|---|---|---|
+| `en_wolf` (теневой волк) | `meshes/skeletal/wolf.dae`, `animation/quadraped/wolf_idle_01`, `wolf_run`, `wolf_attack_01`, `wolf_attack_02`, `wolf_death_01`, `textures/skins/skeletal/animal_wolf_grey.png` | рендер в два направления, шерсть перекрашена в угольную |
+| `cart` (сломанная тележка) | `meshes/props/wrld_handcart_broken.dae`, `textures/skins/props/wood_d.png` | рендер |
+| `banner` (знамя культа) | `meshes/props/garrison_flag.dae`, `textures/skins/props/garrison_hele_1.png` | цвет игрока заменён на багровый, полотнище растянуто по ширине |
 
 ## Шрифты
 

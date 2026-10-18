@@ -233,7 +233,7 @@ export class Enemy extends Actor {
       this.stateT = def.windup * swift;
       this.castCount++;
       this.act('cast', this.stateT + 0.2);
-      if (this.castCount % 3 === 0) this.scene.telegraphCircle(this, h.x, h.y, 1.5, this.stateT + 0.8, this.dmg * 1.5, 'void');
+      if (!def.proj && this.castCount % 3 === 0) this.scene.telegraphCircle(this, h.x, h.y, 1.5, this.stateT + 0.8, this.dmg * 1.5, 'void');
     } else {
       this.stateT = def.windup * swift * (bite ? 0.7 : 1);
       this.act('attack', this.stateT + 0.25);
@@ -253,7 +253,7 @@ export class Enemy extends Actor {
       return;
     }
     if (def.attack === 'ranged') {
-      if (this.castCount % 3 !== 0) sc.enemyProjectile(this, this.aimX, this.aimY, def.projSpeed ?? 6, this.dmg);
+      if (def.proj || this.castCount % 3 !== 0) sc.enemyProjectile(this, this.aimX, this.aimY, def.projSpeed ?? 6, this.dmg, def.proj);
       this.state = 'recover'; this.stateT = 0.4;
       Sfx.play('cast');
       return;

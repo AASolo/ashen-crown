@@ -61,6 +61,8 @@ export interface Dungeon {
   poi?: Record<string, { x: number; y: number }>;
   /** Клетки мощёной дороги (поверхность). */
   road?: Uint8Array;
+  /** Срубленные деревья и разбитые камни (индексы клеток), из сохранения. */
+  felled?: Set<number>;
 }
 
 const DIRS4 = [[1, 0], [-1, 0], [0, 1], [0, -1]];
@@ -389,6 +391,7 @@ function postProcess(d: Dungeon, r: RNG, depth: number): boolean {
   const eliteRooms = new Set(rooms.slice(0, 2).concat(rooms.length > 5 ? [rooms[Math.floor(rooms.length / 2)]] : []));
   const typesFor = () => r.weighted([
     { w: 5, v: 'ghoul' }, { w: depth >= 1 ? 3 : 0, v: 'wolf' }, { w: 3, v: 'cultist' },
+    { w: depth >= 2 ? 3 : 0, v: 'archer' }, { w: depth >= 3 ? 1.5 : 0, v: 'brute' },
   ]);
   for (const rm of rooms) {
     const area = rm.w * rm.h;

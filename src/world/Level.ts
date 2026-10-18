@@ -31,6 +31,8 @@ export class Level {
   private crackedHp = new Map<number, number>();
   private cullTick = 0;
   private docks = new Set<number>();
+  private forest = new Set<number>(); // клетки края с деревом (можно срубить)
+  private rng = new RNG(1);
 
   constructor(private scene: Phaser.Scene, public d: Dungeon) {
     const N = d.w * d.h;
@@ -107,13 +109,66 @@ export class Level {
 
   /** Край поверхности: лес вместо стены. Дерево занимает место стены (прячется перед героем). */
   private makeForest(x: number, y: number, r: RNG) {
+    if (this.d.felled?.has(this.idx(x, y))) { this.makeStump(x, y); return; }
     const p = isoToScreen(x + 0.5 + r.range(-0.2, 0.2), y + 0.5 + r.range(-0.2, 0.2));
     const fk = this.treeKey(r);
     const [ox, oy] = fk ? EXT_ORIGIN[fk] : PROP_ORIGIN.tree;
     const img = this.scene.add.image(p.x, p.y, fk ?? `tree_${r.int(0, 2)}`).setScale(SCALE * (fk ? r.range(0.75, 1.0) : r.range(0.85, 1.25))).setOrigin(ox, oy)
       .setFlipX(r.chance(0.5)).setTint(r.pick([0xffffff, 0xd8ccc0, 0xb8aca0])).setDepth(depthOf(x + 0.5, y + 0.5)).setVisible(false);
     this.walls[this.idx(x, y)] = img;
+    this.forest.add(this.idx(x, y));
     this.all.push(img);
+  }
+
+  /** Пень на месте срубленного дерева края (без FLARE — ничего). */
+  private makeStump(x: number, y: number) {
+    const key = `sf_stump_${(x + y) % 2}`;
+    if (EXT_LOADED.has(key)) this.walls[this.idx(x, y)] = this.ext(key, x + 0.5, y + 0.5, depthOf(x + 0.5, y + 0.5));
+  }
+
+  // ─── Стройка (systems/Building.ts) ──────────────────────────────
+  /** Что можно добыть в клетке: дерево или камень. */
+  resourceAt(x: number, y: number): 'tree' | 'rock' | null {
+    if (x < 0 || y < 0 || x >= this.d.w || y >= this.d.h) return null;
+    const i = this.idx(x, y);
+    if (this.forest.has(i) && this.walls[i]) return 'tree';
+    const e = this.propSprites.find(q => q.prop.x === x && q.prop.y === y && (q.prop.type === 'tree' || q.prop.type === 'rock'));
+    return e ? (e.prop.type as 'tree' | 'rock') : null;
+  }
+
+  /** Короткая дрожь дерева или камня от удара. */
+  shake(x: number, y: number) {
+    const i = this.idx(x, y);
+    const img = this.forest.has(i) ? this.walls[i] : this.propSprites.find(q => q.prop.x === x && q.prop.y === y)?.img;
+    if (img) this.scene.tweens.add({ targets: img, x: img.x + 3, yoyo: true, duration: 45, repeat: 1 });
+  }
+
+  /** Дерево падает (остаётся пень), камень рассыпается. */
+  fell(x: number, y: number) {
+    const i = this.idx(x, y);
+    const fade = (img: Phaser.GameObjects.Image | Phaser.GameObjects.Sprite) =>
+      this.scene.tweens.add({ targets: img, alpha: 0, angle: img.flipX ? -12 : 12, duration: 500, onComplete: () => img.destroy() });
+    if (this.forest.has(i) && this.walls[i]) {
+      fade(this.walls[i]!); this.walls[i] = null; this.forest.delete(i);
+      this.makeStump(x, y);
+      (this.walls[i] as Phaser.GameObjects.Image | null)?.setVisible(true);
+      return;
+    }
+    const k = this.propSprites.findIndex(q => q.prop.x === x && q.prop.y === y && (q.prop.type === 'tree' || q.prop.type === 'rock'));
+    if (k < 0) return;
+    const e = this.propSprites[k];
+    fade(e.img);
+    this.propSprites.splice(k, 1);
+    if (e.prop.type === 'rock') { this.d.solid[i] = 0; this.d.props.splice(this.d.props.indexOf(e.prop), 1); return; }
+    e.prop.type = 'stump'; e.prop.v = i % 2;
+    this.makeProp(e.prop, this.rng);
+    this.propSprites[this.propSprites.length - 1].img.setVisible(true);
+  }
+
+  /** Новая постройка игрока: картинки сразу видны. */
+  addProp(p: Prop, cam: Phaser.Cameras.Scene2D.Camera) {
+    this.makeProp(p, this.rng);
+    this.cull(cam, true);
   }
 
   private nearFloor(x: number, y: number, k = 1) {
@@ -182,7 +237,7 @@ export class Level {
       .setScale(SCALE * (decal ? r.range(0.7, 1.1) : 1)).setOrigin(ox, oy)
       .setDepth(decal ? FLOOR_DEPTH + 1 : depthOf(pr.x + 0.5, pr.y + 0.5)).setVisible(false);
     if (decal && r.chance(0.5)) img.setFlipX(true);
-    if ((pr.type === 'tree' || pr.type === 'tuft' || pr.type === 'reed' || pr.type === 'bush') && r.chance(0.5)) img.setFlipX(true);
+    if (['tree', 'tuft', 'reed', 'bush', 'cart', 'banner'].includes(pr.type) && r.chance(0.5)) img.setFlipX(true);
     if (pr.type === 'tree' && key.startsWith('sf_')) img.setScale(SCALE * r.range(0.75, 0.95));
     if (pr.type === 'dock') img.setDepth(FLOOR_DEPTH + 2); // настил — часть пола, по нему ходят
     const entry: Level['propSprites'][number] = { prop: pr, img };

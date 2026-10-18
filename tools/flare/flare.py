@@ -1,14 +1,20 @@
 import re
 from PIL import Image
 def parse_anim(path):
-    anims={}; img=None; cur=None
+    """У части врагов (минотавр, виверна) свой атлас на анимацию: image=путь,имя; у кадров 9-е поле — имя атласа."""
+    anims={}; img=None; cur=None; named={}
     for line in open(path):
         line=line.strip()
-        if line.startswith('image='): img=line[6:]
+        if line.startswith('image='):
+            src,_,name=line[6:].partition(',')
+            if name: named[name]=src
+            if img is None: img=src
         elif line.startswith('['): cur=line[1:-1]; anims[cur]={'frames':[] ,'n':0}
         elif cur and line.startswith('frames='): anims[cur]['n']=int(line[7:])
         elif cur and line.startswith('frame='):
-            i,d,x,y,w,h,ox,oy=map(int,line[6:].split(','))
+            f=line[6:].split(',')
+            i,d,x,y,w,h,ox,oy=map(int,f[:8])
+            if len(f)>8 and f[8] in named: anims[cur]['img']=named[f[8]]
             anims[cur]['frames'].append((i,d,x,y,w,h,ox,oy))
     return img,anims
 def get_frame(atlas,anims,anim,idx,d):

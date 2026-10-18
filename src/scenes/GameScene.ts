@@ -18,6 +18,7 @@ import {
   type GroundEffect, type Projectile, type Wisp, type GroundLoot,
 } from '../entities/Effects';
 import { FxManager } from '../systems/Fx';
+import { BuildSystem, applySurfaceEdits } from '../systems/Building';
 import { InputController, type Intents } from '../systems/Input';
 import { rollHeroDamage, damageEnemy, damageHero, emberNova, type DmgKind, type HitOpts } from '../systems/Combat';
 import { generateItem, goldDrop } from '../systems/Loot';
@@ -53,6 +54,7 @@ export class GameScene extends Phaser.Scene {
   level!: Level;
   flow!: FlowField;
   fx!: FxManager;
+  build!: BuildSystem;
   ui?: UIScene;
   enemies: Enemy[] = [];
   boss: Boss | null = null;
@@ -102,6 +104,7 @@ export class GameScene extends Phaser.Scene {
 
   create() {
     this.fx = new FxManager(this);
+    this.build = new BuildSystem(this);
     this.inputCtl = new InputController(this);
     this.input.mouse?.disableContextMenu();
     this.cameras.main.setBackgroundColor('#040203');
@@ -165,6 +168,8 @@ export class GameScene extends Phaser.Scene {
     this.floorMod = depth > 1 && !story ? rng.pick(FLOOR_MODS) : null;
     const wolves = step <= 1 ? Math.max(0, (STEPS[1].need ?? 8) - (step === 1 ? D.qProg ?? 0 : 0)) : 0;
     const d = depth === 0 ? generateSurface(D.seed + 77, { wolves }) : generateDungeon(D.seed + depth * 1013, depth, this.theme);
+    if (depth === 0) applySurfaceEdits(d, D); // вырубки и постройки игрока
+    this.build?.cancel(); if (this.build) this.build.job = null;
     this.level = new Level(this, d);
     this.flow = new FlowField(d.w, d.h);
     // в лагерь после первого разговора возвращаемся к костру, а не на дорогу
@@ -445,6 +450,9 @@ export class GameScene extends Phaser.Scene {
     if (!p.wasTouch) this.inputCtl.lastDevice = 'mouse';
     if (this.ui?.isOverUI(p.x, p.y)) return;
     const w = this.pointerWorld(p);
+    // режим стройки: клик ставит постройку, правый клик отменяет
+    if (this.build.active) { if (p.button === 2) this.build.cancel(); else this.build.click(w.x, w.y); return; }
+    this.build.job = null;
     if (p.button === 2) { this.rightHeld = true; this.hero.trySkill(0, w.x, w.y); return; }
     this.leftHeld = true; this.holdT = 0.15;
     // клик по надписи предмета
@@ -459,6 +467,9 @@ export class GameScene extends Phaser.Scene {
     for (const c of this.chests) if (!c.opened && dist(c.x, c.y, w.x, w.y) < 0.8) { this.hero.target = null; this.hero.goTo(c.x, c.y); return; }
     const e = this.pickEnemy(p.worldX, p.worldY);
     if (e) { this.hero.target = e; this.hero.path = null; return; }
+    // клик по дереву или камню на поверхности: подойти и рубить
+    const res = this.build.pick(w.x, w.y);
+    if (res) { this.build.startJob(res); return; }
     if (this.inputCtl && p.event && (p.event as MouseEvent).shiftKey) { this.hero.tryBasic(w.x, w.y); return; }
     this.hero.target = null;
     this.hero.goTo(w.x, w.y);
@@ -489,7 +500,8 @@ export class GameScene extends Phaser.Scene {
 
   private handleIntents(it: Intents, dt: number) {
     const h = this.hero;
-    if (it.menu) this.ui?.toggleMenu();
+    if (it.menu) { if (this.build.active) this.build.cancel(); else this.ui?.toggleMenu(); }
+    if (it.build) this.openBuild();
     if (it.inventory) this.ui?.togglePanel('inventory');
     if (it.skillsPanel) this.ui?.togglePanel('skills');
     if (it.map) this.ui?.toggleMap();
@@ -535,6 +547,13 @@ export class GameScene extends Phaser.Scene {
   }
 
   // ─── Главный цикл ──────────────────────────────────────────────
+  /** Окно стройки: только на поверхности. */
+  openBuild() {
+    if (!this.build.onSurface) { bus.emit(EV.TOAST, 'Строить можно только на поверхности, у лагеря', '#ff8a6a', 2000); return; }
+    this.build.cancel();
+    this.ui?.togglePanel('build');
+  }
+
   update(_t: number, delta: number) {
     const dt = Math.min(delta / 1000, 0.05);
     this.dt = dt;
@@ -562,6 +581,7 @@ export class GameScene extends Phaser.Scene {
     this.updateLoot(dt);
     this.updateInteractables();
     this.updateStory(dt);
+    this.build.update(dt);
     if (this.floorMod?.id === 'ashfall') this.updateAshfall(dt);
 
     if (this.level.reveal(h.x, h.y, this.revealRadius())) bus.emit(EV.MAP_REVEAL);
@@ -635,11 +655,12 @@ export class GameScene extends Phaser.Scene {
     this.projectiles.push(p);
   }
 
-  enemyProjectile(e: Enemy, tx: number, ty: number, speed: number, dmg: number) {
+  enemyProjectile(e: Enemy, tx: number, ty: number, speed: number, dmg: number, tex = 'proj_void') {
     const dx = tx - e.x, dy = ty - e.y, l = Math.hypot(dx, dy) || 1;
     const vx = dx / l * speed, vy = dy / l * speed;
-    const sprite = makeProjectileSprite(this, 'proj_void', vx, vy, 0.6);
-    const p: Projectile = { faction: 'enemy', x: e.x, y: e.y, vx, vy, life: 3, radius: 0.35, dmg, kind: 'void', pierce: 0, explode: 0, opts: {}, hitSet: new Set(), sprite, light: 0x9a6bff, height: 40 };
+    const arrow = tex === 'proj_arrow';
+    const sprite = makeProjectileSprite(this, tex, vx, vy, arrow ? 0.9 : 0.6);
+    const p: Projectile = { faction: 'enemy', x: e.x, y: e.y, vx, vy, life: 3, radius: arrow ? 0.25 : 0.35, dmg, kind: arrow ? 'phys' : 'void', pierce: 0, explode: 0, opts: {}, hitSet: new Set(), sprite, light: arrow ? 0xd9a65a : 0x9a6bff, height: 40 };
     this.projectiles.push(p);
   }
 

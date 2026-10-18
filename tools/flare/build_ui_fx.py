@@ -40,7 +40,7 @@ for cls, name in PORTRAITS.items():
     dark = Image.new('RGBA', (w, h), (10, 6, 7, 255))
     p = Image.composite(p, dark, vig)
     p.alpha_composite(border.resize((w, h)))
-    save(p.resize((256, 256), Image.LANCZOS), f'portrait_{cls}', 90)
+    save(p, f'portrait_{cls}', 92)  # полный размер исходника 320×320: портреты на карточках героев крупные
 
 # --- Иконки: лист icons.png, ячейки 64×64, 8 в ряд; выводим 96×96 (как процедурные) ---
 sheet = Image.open(f'{IMG}/icons/icons.png').convert('RGBA')

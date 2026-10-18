@@ -9,7 +9,7 @@ export interface Intents {
   skills: [boolean, boolean, boolean];// нажатия в этом кадре
   dodge: boolean;
   potion: boolean;
-  inventory: boolean; skillsPanel: boolean; map: boolean; menu: boolean; journal: boolean;
+  inventory: boolean; skillsPanel: boolean; map: boolean; menu: boolean; journal: boolean; build: boolean;
   shift: boolean;                     // атака на месте
   autoAim: boolean;                   // целиться автоматически (тач/геймпад)
 }
@@ -30,7 +30,7 @@ export class InputController {
 
   constructor(private scene: Phaser.Scene) {
     const kb = scene.input.keyboard!;
-    const names = ['W', 'A', 'S', 'D', 'Q', 'E', 'R', 'F', 'I', 'K', 'M', 'C', 'J', 'TAB', 'ESC', 'SPACE', 'SHIFT', 'ONE', 'TWO', 'THREE', 'FOUR', 'UP', 'DOWN', 'LEFT', 'RIGHT'];
+    const names = ['W', 'A', 'S', 'D', 'Q', 'E', 'R', 'F', 'I', 'K', 'M', 'C', 'J', 'B', 'TAB', 'ESC', 'SPACE', 'SHIFT', 'ONE', 'TWO', 'THREE', 'FOUR', 'UP', 'DOWN', 'LEFT', 'RIGHT'];
     for (const n of names) this.keys[n] = kb.addKey(n, true, false);
   }
 
@@ -41,7 +41,7 @@ export class InputController {
     const wasd = settings.scheme === 'wasd';
     const it: Intents = {
       move: { x: 0, y: 0 }, attackHeld: false, skills: [false, false, false], dodge: false, potion: false,
-      inventory: false, skillsPanel: false, map: false, menu: false, journal: false, shift: !!this.down('SHIFT'), autoAim: false,
+      inventory: false, skillsPanel: false, map: false, menu: false, journal: false, build: false, shift: !!this.down('SHIFT'), autoAim: false,
     };
     // клавиатура: стрелки всегда, WASD — во второй схеме
     let mx = 0, my = 0;
@@ -60,6 +60,7 @@ export class InputController {
     it.skillsPanel = this.hit('K');
     it.map = this.hit('M') || this.hit('TAB');
     it.journal = this.hit('J');
+    it.build = this.hit('B');
     it.menu = this.hit('ESC');
 
     // геймпад

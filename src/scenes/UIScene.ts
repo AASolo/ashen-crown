@@ -2,10 +2,10 @@
 // трекер заданий, полоса босса), сенсорное управление, панели (инвентарь, навыки, карта, пауза),
 // всплывающие сообщения и субтитры. Масштабируется под экран и настройку «Масштаб интерфейса».
 import Phaser from 'phaser';
-import { UI, FONT } from '../config';
+import { UI, FONT, ART } from '../config';
 import { bus, EV } from '../core/events';
 import { Sfx } from '../core/Sfx';
-import { clamp } from '../core/iso';
+import { clamp, isoToScreen } from '../core/iso';
 import { txt, title, panel, button, settingsPanel, hexStr } from '../ui/widgets';
 import { settings, isTouchUI } from '../systems/Settings';
 import { touch } from '../systems/Input';
@@ -18,10 +18,14 @@ import {
 } from '../systems/HeroData';
 import { itemStats, sellPrice, salvageShards, upgradeCost, type Item } from '../systems/Loot';
 import { STEPS, QUEST_DONE, questStep, goalText } from '../data/quests';
+import { RECIPES } from '../systems/Building';
+import { STRUCTS } from '../world/DungeonGen';
+
+import { EXT_ORIGIN } from '../art/external';
 import type { GameScene } from './GameScene';
 import type { Enemy } from '../entities/Enemy';
 
-type PanelId = 'inventory' | 'skills' | 'journal';
+type PanelId = 'inventory' | 'skills' | 'journal' | 'build';
 interface Rect { x: number; y: number; w: number; h: number }
 type Sel = { where: 'bag'; idx: number } | { where: 'equip'; slot: Slot } | null;
 
@@ -174,10 +178,10 @@ export class UIScene extends Phaser.Scene {
     const tl = this.add.container(this.touchMode ? 210 * s : 14 * s, this.touchMode ? 18 * s : 14 * s).setScale(s);
     this.statText = txt(this, 0, 0, '', 16, UI.text, { stroke: '#000', strokeThickness: 3, lineSpacing: 2 }, s);
     tl.add(this.statText);
-    const btns: [string, () => void][] = [['Сумка', () => this.togglePanel('inventory')], ['Навыки', () => this.togglePanel('skills')], ['Журнал', () => this.togglePanel('journal')], ['Карта', () => this.toggleMap()], ['Меню', () => this.toggleMenu()]];
+    const btns: [string, () => void][] = [['Сумка', () => this.togglePanel('inventory')], ['Навыки', () => this.togglePanel('skills')], ['Журнал', () => this.togglePanel('journal')], ['Стройка', () => this.gs.openBuild()], ['Карта', () => this.toggleMap()], ['Меню', () => this.toggleMenu()]];
     btns.forEach(([l, cb], i) => { const b = button(this, i * 74, 50, 70, 30, l, cb, s, 14); tl.add(b.cont); });
     this.hud.add(tl);
-    R(tl.x, tl.y, 380 * s, 84 * s);
+    R(tl.x, tl.y, 450 * s, 84 * s);
 
     // ── мини-карта и трекер ──
     const mmW = 230, mmH = 140;
@@ -334,7 +338,7 @@ export class UIScene extends Phaser.Scene {
     this.xpG.fillStyle(0xc89a4a, 1); this.xpG.fillRect(0, 0, this.xpW * k, 4);
     for (let i = 1; i < 10; i++) { this.xpG.fillStyle(0x000000, 0.6); this.xpG.fillRect(this.xpW * i / 10, 0, 1, 4); }
     // статы
-    this.statText.setText(`${h.cls.name}, ур. ${D.level}${D.points ? `  ✦ ${D.points}` : ''}\n◉ ${D.gold} зол.   ◆ ${D.shards} оск.`);
+    this.statText.setText(`${h.cls.name}, ур. ${D.level}${D.points ? `  ✦ ${D.points}` : ''}\n◉ ${D.gold} зол.   ◆ ${D.shards} оск.${D.depth === 0 || D.wood || D.stone ? `   ▲ ${D.wood ?? 0} дер.   ● ${D.stone ?? 0} кам.` : ''}`);
     this.floorText.setText(this.gs.floorTitle);
     // трекер
     const st = this.gs.stats;
@@ -461,7 +465,7 @@ export class UIScene extends Phaser.Scene {
 
   // ─── Панели ────────────────────────────────────────────────────
   private closePanels() {
-    for (const k of ['inventory', 'skills', 'journal'] as PanelId[]) { this.panelCont[k]?.destroy(); delete this.panelCont[k]; delete this.panelRect[k]; }
+    for (const k of ['inventory', 'skills', 'journal', 'build'] as PanelId[]) { this.panelCont[k]?.destroy(); delete this.panelCont[k]; delete this.panelRect[k]; }
     this.openPanel = null; this.sel = null; this.hideTip();
   }
 
@@ -472,7 +476,7 @@ export class UIScene extends Phaser.Scene {
     if (was === id) return;
     this.openPanel = id;
     Sfx.play('ui');
-    if (id === 'inventory') this.buildInventory(); else if (id === 'journal') this.buildJournal(); else this.buildSkills();
+    if (id === 'inventory') this.buildInventory(); else if (id === 'journal') this.buildJournal(); else if (id === 'build') this.buildBuildPanel(); else this.buildSkills();
   }
 
   // ─── Журнал заданий ────────────────────────────────────────────
@@ -501,6 +505,44 @@ export class UIScene extends Phaser.Scene {
       for (const q of list) { c.add(txt(this, 48, y, '✓ ' + q, 15, UI.textDim, {}, sc)); y += 22; }
     }
     c.add(txt(this, W / 2, H - 30, 'J — открыть или закрыть журнал', 13, UI.textDim, {}, sc).setOrigin(0.5, 0));
+  }
+
+  // ─── Стройка ───────────────────────────────────────────────────
+  private buildBuildPanel() {
+    const W = 680, H = 560;
+    const { c, sc } = this.panelFrame('build', W, H, 'Стройка');
+    const D = this.gs.heroData, wood = D.wood ?? 0, stone = D.stone ?? 0;
+    c.add(txt(this, 36, 62, `У вас: дерево ${wood} · камень ${stone}`, 18, '#ffd88a', { fontStyle: 'bold' }, sc));
+    c.add(txt(this, 36, 90, 'Кликните по дереву, чтобы срубить его, или по валуну, чтобы разбить. Постройки остаются навсегда.', 14, UI.textDim, { wordWrap: { width: W - 72 } }, sc));
+    RECIPES.forEach((r, i) => {
+      const y = 132 + i * 62;
+      const can = wood >= r.wood && stone >= r.stone;
+      // значок: дом и палатка собираются из своих частей по клеткам, как в игре
+      const parts: [number, number, string][] = r.type === 'struct'
+        ? STRUCTS[r.v!].parts.map(([dx, dy, t]) => [dx, dy, `sf_${r.v!.startsWith('tent') ? 'tent' : 'house'}_${t}`] as [number, number, string])
+        : [[0, 0, r.key]];
+      if (parts.every(([, , k]) => this.textures.exists(k))) {
+        const icon = this.add.container(0, 0);
+        for (const [dx, dy, k] of [...parts].sort((a, b) => a[0] + a[1] - b[0] - b[1])) {
+          const p = isoToScreen(dx, dy);
+          const [ox, oy] = EXT_ORIGIN[k] ?? [0.5, 0.8];
+          icon.add(this.add.image(p.x * ART, p.y * ART, k).setOrigin(ox, oy));  // картинки в 2× от игрового пикселя
+        }
+        const b = icon.getBounds();
+        const k = Math.min(56 / b.width, 56 / b.height);
+        icon.setScale(k).setPosition(70 - (b.centerX) * k, y + 26 - (b.centerY) * k);
+        if (!can) icon.setAlpha(0.45);
+        c.add(icon);
+      }
+      c.add(txt(this, 112, y + 4, r.name, 19, can ? UI.text : UI.textDim, { fontStyle: 'bold' }, sc));
+      c.add(txt(this, 112, y + 30, r.desc, 14, UI.textDim, {}, sc));
+      const cost = [r.wood ? `дерево ${r.wood}` : '', r.stone ? `камень ${r.stone}` : ''].filter(Boolean).join(' · ');
+      c.add(txt(this, W - 210, y + 16, cost, 15, can ? '#e8c890' : '#a07060', { align: 'right' }, sc).setOrigin(1, 0));
+      const b = button(this, W - 190, y + 10, 150, 38, 'Строить', () => { this.closePanels(); this.gs.build.start(r.id); }, sc, 15);
+      b.setEnabled(can);
+      c.add(b.cont);
+    });
+    c.add(txt(this, W / 2, H - 30, 'B — открыть стройку · Esc или правый клик — отменить постройку', 13, UI.textDim, {}, sc).setOrigin(0.5, 0));
   }
 
   // ─── Диалог ────────────────────────────────────────────────────
