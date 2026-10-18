@@ -13,21 +13,73 @@ export function title(scene: Phaser.Scene, x: number, y: number, s: string, size
   return txt(scene, x, y, s, size, '#e8d4b0', { fontFamily: FONT_TITLE, fontStyle: 'bold', stroke: '#0a0606', strokeThickness: 4 }, res).setOrigin(0.5, 0);
 }
 
-/** Готическая панель: тёмная подложка, двойная бронзовая рамка, уголки-ромбы. */
-export function panel(scene: Phaser.Scene, w: number, h: number, alpha = 0.95): Phaser.GameObjects.Graphics {
+/**
+ * Панель. С ассетами FLARE — кожаное окно (kind 'window', с полосой заголовка) или тёмная подложка подсказки
+ * (kind 'plain'), растянутые без искажения краёв; поверх — бронзовые уголки-ромбы. Без ассетов — рисуется кодом.
+ */
+export function panel(scene: Phaser.Scene, w: number, h: number, alpha = 0.95, kind: 'window' | 'plain' = h < 120 ? 'plain' : 'window'): Phaser.GameObjects.Container {
+  const c = scene.add.container(0, 0);
   const g = scene.add.graphics();
   g.fillStyle(0x000000, 0.5); g.fillRect(4, 6, w, h);
+  const key = kind === 'window' ? 'ui_panel' : 'ui_tip';
+  if (scene.textures.exists(key)) {
+    const [l, r, t, b] = kind === 'window' ? [18, 18, 36, 18] : [10, 10, 10, 10];
+    c.add([g, scene.add.nineslice(0, 0, key, undefined, w, h, l, r, t, b).setOrigin(0).setAlpha(Math.min(1, alpha + 0.05))]);
+    const o = scene.add.graphics();
+    o.lineStyle(1, UI.border, 0.55); o.strokeRect(4, 4, w - 8, h - 8);
+    corners(o, w, h);
+    c.add(o);
+    return c;
+  }
   g.fillStyle(UI.panel, alpha); g.fillRect(0, 0, w, h);
   // внутренний градиент имитируем полосами
   for (let i = 0; i < 6; i++) { g.fillStyle(0x2a1a14, 0.05); g.fillRect(i * 2, i * 2, w - i * 4, h - i * 4); }
   g.lineStyle(3, UI.borderDark, 1); g.strokeRect(1, 1, w - 2, h - 2);
   g.lineStyle(1.5, UI.border, 1); g.strokeRect(5, 5, w - 10, h - 10);
   g.lineStyle(1, 0x3a2818, 1); g.strokeRect(9, 9, w - 18, h - 18);
+  corners(g, w, h);
+  c.add(g);
+  return c;
+}
+
+function corners(g: Phaser.GameObjects.Graphics, w: number, h: number) {
   for (const [x, y] of [[5, 5], [w - 5, 5], [5, h - 5], [w - 5, h - 5]]) {
     g.fillStyle(UI.border, 1); g.fillTriangle(x - 7, y, x, y - 7, x + 7, y); g.fillTriangle(x - 7, y, x, y + 7, x + 7, y);
     g.fillStyle(0xff7a2a, 0.9); g.fillCircle(x, y, 1.6);
   }
-  return g;
+}
+
+/** Квадратная кнопка с белым глифом на каменной плашке, как на панели действий FLARE; подпись под ней. */
+export function iconButton(scene: Phaser.Scene, x: number, y: number, size: number, icon: string, label: string, cb: () => void, res = 1): Phaser.GameObjects.Container {
+  const cont = scene.add.container(x, y);
+  const hasArt = scene.textures.exists('ui_slot') && scene.textures.exists(icon);
+  const bg = hasArt ? scene.add.image(0, 0, 'ui_slot').setOrigin(0).setDisplaySize(size, size) : scene.add.rectangle(0, 0, size, size, 0x1a1214).setOrigin(0).setStrokeStyle(2, UI.border);
+  const glow = scene.add.rectangle(0, 0, size, size, 0xffb060, 0.16).setOrigin(0).setVisible(false);
+  const ic = hasArt ? scene.add.image(size / 2, size / 2, icon).setDisplaySize(size * 0.8, size * 0.8) : null;
+  const t = txt(scene, size / 2, size + 2, label, 12, UI.textDim, { stroke: '#000', strokeThickness: 3 }, res).setOrigin(0.5, 0);
+  const zone = scene.add.zone(0, 0, size, size + 16).setOrigin(0).setInteractive({ useHandCursor: true });
+  zone.on('pointerover', () => { glow.setVisible(true); ic?.setTint(0xffe6c0); t.setColor(UI.text); });
+  zone.on('pointerout', () => { glow.setVisible(false); ic?.clearTint(); t.setColor(UI.textDim); });
+  zone.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => {
+    ev?.stopPropagation?.();
+    Sfx.unlock(); Sfx.play('ui');
+    cb();
+  });
+  cont.add([bg, glow, ...(ic ? [ic] : [txt(scene, size / 2, size / 2, label.slice(0, 1), 18, UI.text, { fontStyle: 'bold' }, res).setOrigin(0.5)]), t, zone]);
+  return cont;
+}
+
+/** Крестик закрытия окна: красная кнопка FLARE, без ассетов — обычная кнопка «✕». */
+export function closeButton(scene: Phaser.Scene, x: number, y: number, cb: () => void, res = 1): Phaser.GameObjects.Container {
+  if (!scene.textures.exists('ui_close')) return button(scene, x, y, 32, 32, '✕', cb, res).cont;
+  const cont = scene.add.container(x, y);
+  const img = scene.add.image(0, 0, 'ui_close').setOrigin(0).setDisplaySize(44, 26);
+  const zone = scene.add.zone(0, 0, 44, 26).setOrigin(0).setInteractive({ useHandCursor: true });
+  zone.on('pointerover', () => img.setTexture(scene.textures.exists('ui_close_hover') ? 'ui_close_hover' : 'ui_close'));
+  zone.on('pointerout', () => img.setTexture('ui_close'));
+  zone.on('pointerdown', (_p: Phaser.Input.Pointer, _x: number, _y: number, ev: Phaser.Types.Input.EventData) => { ev?.stopPropagation?.(); Sfx.unlock(); Sfx.play('ui'); cb(); });
+  cont.add([img, zone]);
+  return cont;
 }
 
 export interface Btn { cont: Phaser.GameObjects.Container; label: Phaser.GameObjects.Text; setEnabled(v: boolean): void; setText(s: string): void }
@@ -54,6 +106,9 @@ export function button(scene: Phaser.Scene, x: number, y: number, w: number, h: 
   };
   draw(false);
   const t = txt(scene, w / 2, h / 2, label, size, UI.text, { fontStyle: 'bold' }, res).setOrigin(0.5);
+  // длинная подпись не вылезает за бронзовые ромбы рамки
+  const room = w - (skin ? 44 : 12);
+  if (t.displayWidth > room) t.setScale(t.scaleX * room / t.displayWidth, t.scaleY * room / t.displayWidth);
   const zone = scene.add.zone(0, 0, w, h).setOrigin(0).setInteractive({ useHandCursor: true });
   zone.on('pointerover', () => draw(true));
   zone.on('pointerout', () => draw(false));

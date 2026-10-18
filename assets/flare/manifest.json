@@ -937,10 +937,27 @@
   "sk_witch_circle",
   "sk_witch_fireball",
   "sk_witch_wisps",
+  "ui_arrow",
+  "ui_bar_boss",
+  "ui_bar_boss_bg",
   "ui_btn",
   "ui_btn_down",
   "ui_btn_hover",
-  "ui_btn_off"
+  "ui_btn_off",
+  "ui_close",
+  "ui_close_hover",
+  "ui_ic_bag",
+  "ui_ic_build",
+  "ui_ic_char",
+  "ui_ic_journal",
+  "ui_ic_map",
+  "ui_ic_menu",
+  "ui_ic_skills",
+  "ui_mm_frame",
+  "ui_panel",
+  "ui_slot",
+  "ui_slot_hover",
+  "ui_tip"
  ],
  "fx": {
   "fx_blast": {

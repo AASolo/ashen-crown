@@ -6,7 +6,7 @@ import { UI, FONT, ART } from '../config';
 import { bus, EV } from '../core/events';
 import { Sfx } from '../core/Sfx';
 import { clamp, isoToScreen } from '../core/iso';
-import { txt, title, panel, button, settingsPanel, hexStr } from '../ui/widgets';
+import { txt, title, panel, button, iconButton, closeButton, settingsPanel, hexStr } from '../ui/widgets';
 import { settings, isTouchUI } from '../systems/Settings';
 import { touch } from '../systems/Input';
 import { SKILLS, skillDesc, MAX_SKILL_RANK } from '../data/skills';
@@ -42,7 +42,8 @@ export class UIScene extends Phaser.Scene {
   private mmBox!: Rect;
   private tracker!: Phaser.GameObjects.Text; private floorText!: Phaser.GameObjects.Text;
   private statText!: Phaser.GameObjects.Text;
-  private bossBar?: { cont: Phaser.GameObjects.Container; g: Phaser.GameObjects.Graphics; name: Phaser.GameObjects.Text; boss: Enemy };
+  private coins: { icon: Phaser.GameObjects.Image | null; t: Phaser.GameObjects.Text }[] = [];
+  private bossBar?: { cont: Phaser.GameObjects.Container; g: Phaser.GameObjects.Graphics; name: Phaser.GameObjects.Text; boss: Enemy; fill?: Phaser.GameObjects.Image };
   private hoverCont!: Phaser.GameObjects.Container; private hoverG!: Phaser.GameObjects.Graphics; private hoverName!: Phaser.GameObjects.Text;
   private toasts: Phaser.GameObjects.Text[] = [];
   private subtitle!: Phaser.GameObjects.Text; private subT = 0;
@@ -176,17 +177,30 @@ export class UIScene extends Phaser.Scene {
 
     // ── верхний левый угол: уровень, валюта, кнопки ──
     const tl = this.add.container(this.touchMode ? 210 * s : 14 * s, this.touchMode ? 18 * s : 14 * s).setScale(s);
-    this.statText = txt(this, 0, 0, '', 16, UI.text, { stroke: '#000', strokeThickness: 3, lineSpacing: 2 }, s);
+    this.statText = txt(this, 0, 0, '', 16, UI.text, { stroke: '#000', strokeThickness: 3 }, s);
     tl.add(this.statText);
-    const btns: [string, () => void][] = [['Сумка', () => this.togglePanel('inventory')], ['Навыки', () => this.togglePanel('skills')], ['Журнал', () => this.togglePanel('journal')], ['Стройка', () => this.gs.openBuild()], ['Карта', () => this.toggleMap()], ['Меню', () => this.toggleMenu()]];
-    btns.forEach(([l, cb], i) => { const b = button(this, i * 74, 50, 70, 30, l, cb, s, 14); tl.add(b.cont); });
+    // золото, осколки, дерево, камень: значок и число
+    this.coins = (['it_gold', 'it_shard', 'sf_logs_0', 'sf_stone_0'] as const).map(k => {
+      const icon = this.textures.exists(k) ? this.add.image(0, 31, k).setOrigin(0, 0.5) : null;
+      icon?.setScale(20 / Math.max(icon.width, icon.height));
+      const t = txt(this, 0, 22, '', 15, UI.text, { stroke: '#000', strokeThickness: 3 }, s);
+      tl.add([...(icon ? [icon] : []), t]);
+      return { icon, t };
+    });
+    // кнопки окон: глифы на каменных плашках, горячая клавиша в подписи
+    const btns: [string, string, () => void][] = [
+      ['ui_ic_bag', 'Сумка', () => this.togglePanel('inventory')], ['ui_ic_skills', 'Навыки', () => this.togglePanel('skills')],
+      ['ui_ic_journal', 'Журнал', () => this.togglePanel('journal')], ['ui_ic_build', 'Стройка', () => this.gs.openBuild()],
+      ['ui_ic_map', 'Карта', () => this.toggleMap()], ['ui_ic_menu', 'Меню', () => this.toggleMenu()]];
+    btns.forEach(([icon, l, cb], i) => tl.add(iconButton(this, i * 56, 46, 46, icon, l, cb, s)));
     this.hud.add(tl);
-    R(tl.x, tl.y, 450 * s, 84 * s);
+    R(tl.x, tl.y, 340 * s, 112 * s);
 
     // ── мини-карта и трекер ──
     const mmW = 230, mmH = 140;
     const tr = this.add.container(W - (mmW + 14) * s, 14 * s).setScale(s);
-    tr.add(panel(this, mmW, mmH, 0.75));
+    const framed = this.textures.exists('ui_mm_frame');
+    tr.add(framed ? this.add.rectangle(0, 0, mmW, mmH, 0x0a0708, 0.8).setOrigin(0) : panel(this, mmW, mmH, 0.75));
     this.mmBox = { x: tr.x + 8 * s, y: tr.y + 8 * s, w: (mmW - 16) * s, h: (mmH - 16) * s };
     this.mmImg = this.add.image(0, 0, 'minimap').setOrigin(0, 0);
     this.mmG = this.add.graphics();
@@ -195,6 +209,8 @@ export class UIScene extends Phaser.Scene {
     const mask = this.mmMask.createGeometryMask();
     this.mmImg.setMask(mask); this.mmG.setMask(mask);
     this.hud.add([this.mmImg, this.mmG]);
+    // бронзовая рамка FLARE поверх самой карты
+    if (framed) this.hud.add(this.add.nineslice(tr.x, tr.y, 'ui_mm_frame', undefined, mmW, mmH, 14, 14, 14, 14).setOrigin(0).setScale(s));
     this.floorText = txt(this, mmW, mmH + 6, '', 14, '#c8b898', { align: 'right', stroke: '#000', strokeThickness: 3, wordWrap: { width: 300 } }, s).setOrigin(1, 0);
     this.tracker = txt(this, mmW, mmH + 46, '', 15, UI.text, { align: 'right', stroke: '#000', strokeThickness: 3, lineSpacing: 3 }, s).setOrigin(1, 0);
     tr.add([this.floorText, this.tracker]);
@@ -338,7 +354,17 @@ export class UIScene extends Phaser.Scene {
     this.xpG.fillStyle(0xc89a4a, 1); this.xpG.fillRect(0, 0, this.xpW * k, 4);
     for (let i = 1; i < 10; i++) { this.xpG.fillStyle(0x000000, 0.6); this.xpG.fillRect(this.xpW * i / 10, 0, 1, 4); }
     // статы
-    this.statText.setText(`${h.cls.name}, ур. ${D.level}${D.points ? `  ✦ ${D.points}` : ''}\n◉ ${D.gold} зол.   ◆ ${D.shards} оск.${D.depth === 0 || D.wood || D.stone ? `   ▲ ${D.wood ?? 0} дер.   ● ${D.stone ?? 0} кам.` : ''}`);
+    this.statText.setText(`${h.cls.name}, ур. ${D.level}${D.points ? `  ✦ ${D.points}` : ''}`);
+    const res = D.depth === 0 || D.wood || D.stone;
+    const vals = [`${D.gold}`, `${D.shards}`, res ? `${D.wood ?? 0}` : '', res ? `${D.stone ?? 0}` : ''];
+    const fallback = ['◉ ', '◆ ', '▲ ', '● '];
+    let cx = 0;
+    this.coins.forEach((c, i) => {
+      const on = vals[i] !== '';
+      c.icon?.setVisible(on).setX(cx);
+      c.t.setVisible(on).setText(c.icon ? vals[i] : fallback[i] + vals[i]).setX(cx + (c.icon ? 24 : 0));
+      if (on) cx += (c.icon ? 24 : 0) + c.t.width + 16;
+    });
     this.floorText.setText(this.gs.floorTitle);
     // трекер
     const st = this.gs.stats;
@@ -373,13 +399,20 @@ export class UIScene extends Phaser.Scene {
       const b = this.bossBar.boss as any;
       if (!b.alive) { this.bossBar.cont.destroy(); this.bossBar = undefined; }
       else {
-        const g = this.bossBar.g, w = 520;
+        const g = this.bossBar.g, fill = this.bossBar.fill;
         g.clear();
-        g.fillStyle(0x000000, 0.8); g.fillRect(-w / 2 - 3, 30, w + 6, 18);
-        g.fillStyle(0x5a0a10, 1); g.fillRect(-w / 2, 33, w, 12);
-        g.fillStyle(b.invulnT > 0 ? 0xd9a65a : 0xc8202a, 1); g.fillRect(-w / 2, 33, w * Math.max(0, b.hp / b.maxHp), 12);
-        g.fillStyle(0xffffff, 0.12); g.fillRect(-w / 2, 33, w * Math.max(0, b.hp / b.maxHp), 4);
-        for (const m of [0.6, 0.25]) { g.fillStyle(0xd9a65a, 1); g.fillRect(-w / 2 + w * m - 1, 30, 2, 18); }
+        if (fill) {
+          const k = Math.max(0, b.hp / b.maxHp), tw = fill.frame.realWidth, w = 520;
+          fill.setCrop(0, 0, tw * k, fill.frame.realHeight).setTint(b.invulnT > 0 ? 0xffd890 : 0xffffff);
+          for (const m of [0.6, 0.25]) { g.fillStyle(0xd9a65a, 1); g.fillRect(-w / 2 + w * m - 1, 31, 2, 22); }
+        } else {
+          const w = 520;
+          g.fillStyle(0x000000, 0.8); g.fillRect(-w / 2 - 3, 30, w + 6, 18);
+          g.fillStyle(0x5a0a10, 1); g.fillRect(-w / 2, 33, w, 12);
+          g.fillStyle(b.invulnT > 0 ? 0xd9a65a : 0xc8202a, 1); g.fillRect(-w / 2, 33, w * Math.max(0, b.hp / b.maxHp), 12);
+          g.fillStyle(0xffffff, 0.12); g.fillRect(-w / 2, 33, w * Math.max(0, b.hp / b.maxHp), 4);
+          for (const m of [0.6, 0.25]) { g.fillStyle(0xd9a65a, 1); g.fillRect(-w / 2 + w * m - 1, 30, 2, 18); }
+        }
         this.bossBar.name.setText(`${b.displayName} — фаза ${b.phase}`);
       }
     }
@@ -448,8 +481,16 @@ export class UIScene extends Phaser.Scene {
     const cont = this.add.container(this.scale.width / 2, 12 * s).setScale(s);
     const g = this.add.graphics();
     const name = txt(this, 0, 0, b.displayName, 22, '#ffb080', { fontStyle: 'bold', stroke: '#000', strokeThickness: 5, fontFamily: FONT }, s).setOrigin(0.5, 0);
+    // полоса FLARE: тёмная рамка с черепами по краям и багровая жидкость внутри
+    let fill: Phaser.GameObjects.Image | undefined;
+    if (this.textures.exists('ui_bar_boss_bg') && this.textures.exists('ui_bar_boss')) {
+      const w = 600;
+      cont.add(this.add.nineslice(-w / 2, 26, 'ui_bar_boss_bg', undefined, w, 32, 44, 44, 8, 8).setOrigin(0));
+      fill = this.add.image(-w / 2 + 40, 33, 'ui_bar_boss').setOrigin(0).setDisplaySize(w - 80, 18);
+      cont.add(fill);
+    }
     cont.add([g, name]);
-    this.bossBar = { cont, g, name, boss: b };
+    this.bossBar = { cont, g, name, boss: b, fill };
   }
 
   // ─── Проверка «курсор над интерфейсом» ────────────────────────
@@ -599,7 +640,7 @@ export class UIScene extends Phaser.Scene {
     const c = this.add.container(x, y).setScale(sc).setDepth(3000);
     const blocker = this.add.zone(0, 0, w, h).setOrigin(0).setInteractive();
     c.add([blocker, panel(this, w, h, 0.97), title(this, w / 2, 14, ttl, 26, sc)]);
-    c.add(button(this, w - 46, 12, 32, 32, '✕', () => this.closePanels(), sc).cont);
+    c.add(closeButton(this, w - 58, 6, () => this.closePanels(), sc));
     this.panelCont[id] = c;
     this.panelRect[id] = { x, y, w: w * sc, h: h * sc };
     return { c, sc };
@@ -688,7 +729,7 @@ export class UIScene extends Phaser.Scene {
       const cost = upgradeCost(it);
       act(718, 152, cost ? `Улучшить ${cost.gold}з/${cost.shards}о` : 'Максимум', () => { if (upgradeItem(D, it)) { Sfx.play('levelup'); this.toast(`${it.name} +${it.upgrade}`, '#ffd080'); } }, !!cost && D.gold >= cost.gold && D.shards >= cost.shards);
     } else c.add(txt(this, 360, by + 8, this.touchMode ? 'Коснитесь предмета, чтобы выбрать; перетащите в слот, чтобы надеть.' : 'Наведите — сравнение; клик — выбрать; двойной клик или перетаскивание — надеть.', 14, UI.textDim, { wordWrap: { width: 500 } }, sc));
-    const junk = button(this, 360, 480, 200, 36, 'Продать хлам (обычн./необычн.)', () => { const g = sellJunk(D); if (g) { Sfx.play('gold'); this.toast(`+${g} золота`, '#d9a65a'); } this.afterChange(); }, sc, 13);
+    const junk = button(this, 360, 480, 260, 36, 'Продать хлам (обычн./необычн.)', () => { const g = sellJunk(D); if (g) { Sfx.play('gold'); this.toast(`+${g} золота`, '#d9a65a'); } this.afterChange(); }, sc, 13);
     c.add(junk.cont);
     c.add(txt(this, 360, 530, 'Торговец-призрак Ковен-Гейта следует за вами: продажа и разбор доступны в любом месте.', 13, UI.textDim, { wordWrap: { width: 500 } }, sc));
     if (it && this.sel && this.touchMode) {

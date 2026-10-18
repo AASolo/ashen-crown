@@ -81,6 +81,7 @@ export class GameScene extends Phaser.Scene {
   private floorGlows: Phaser.GameObjects.Image[] = [];
   private heroGlow!: Phaser.GameObjects.Image;
   private g!: Phaser.GameObjects.Graphics;
+  private qArrow?: Phaser.GameObjects.Image;
   private leftHeld = false;
   private rightHeld = false;
   private holdT = 0;
@@ -1173,11 +1174,17 @@ export class GameScene extends Phaser.Scene {
       const hp = isoToScreen(this.hero.x, this.hero.y), tp = isoToScreen(qt.x, qt.y);
       const a = Math.atan2(tp.y - hp.y, tp.x - hp.x), R = 46, pulse = 0.65 + Math.sin(now / 220) * 0.25;
       const cx = hp.x + Math.cos(a) * R, cy = hp.y - 10 + Math.sin(a) * R * 0.6;
-      const pt = (r: number, da: number) => ({ x: cx + Math.cos(a + da) * r, y: cy + Math.sin(a + da) * r });
-      const t1 = pt(12, 0), t2 = pt(9, 2.4), t3 = pt(9, -2.4);
-      g.fillStyle(0xffc04a, pulse); g.fillTriangle(t1.x, t1.y, t2.x, t2.y, t3.x, t3.y);
-      g.lineStyle(1.5, 0x2a1408, pulse); g.strokeTriangle(t1.x, t1.y, t2.x, t2.y, t3.x, t3.y);
-    }
+      if (this.textures.exists('ui_arrow')) {
+        // бронзовая стрелка FLARE (смотрит вверх) с золотым отливом
+        if (!this.qArrow || !this.qArrow.active) this.qArrow = this.add.image(0, 0, 'ui_arrow').setDepth(FLOOR_DEPTH + 3.1).setScale(0.7).setTint(0xffe2a0);
+        this.qArrow.setVisible(true).setPosition(cx, cy).setRotation(a + Math.PI / 2).setAlpha(Math.min(1, pulse + 0.15));
+      } else {
+        const pt = (r: number, da: number) => ({ x: cx + Math.cos(a + da) * r, y: cy + Math.sin(a + da) * r });
+        const t1 = pt(12, 0), t2 = pt(9, 2.4), t3 = pt(9, -2.4);
+        g.fillStyle(0xffc04a, pulse); g.fillTriangle(t1.x, t1.y, t2.x, t2.y, t3.x, t3.y);
+        g.lineStyle(1.5, 0x2a1408, pulse); g.strokeTriangle(t1.x, t1.y, t2.x, t2.y, t3.x, t3.y);
+      }
+    } else this.qArrow?.setVisible(false);
     // кольцо под целью
     const tg = this.hovered || this.hero.target;
     if (tg && tg.alive) {
