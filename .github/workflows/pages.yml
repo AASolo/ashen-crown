@@ -26,6 +26,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
+      - run: python3 tools/strip_c2pa.py --check   # Safari не читает WebP с чанком C2PA
       - run: npm ci
       - run: npm run build
       - uses: actions/upload-pages-artifact@v3
